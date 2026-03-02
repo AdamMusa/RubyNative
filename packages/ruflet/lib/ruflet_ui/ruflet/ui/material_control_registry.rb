@@ -57,6 +57,7 @@ module Ruflet
         "slider" => "Slider",
         "dropdown" => "DropdownM2",
         "dropdownm2" => "DropdownM2",
+        "dropdown_m2" => "DropdownM2",
         "option" => "Option",
         "card" => "Card",
         "banner" => "Banner",

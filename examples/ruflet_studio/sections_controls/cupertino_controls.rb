@@ -6,8 +6,8 @@ module RufletStudio
       radio_group = page.radio_group(value: "r1")
       cupertino_dialog = page.control(
         :cupertino_alert_dialog,
-        title: page.text(value: "Cupertino"),
-        content: page.text(value: "Hello from Cupertino"),
+        title: "Cupertino",
+        content: "Hello from Cupertino",
         actions: [
           page.control(:cupertino_dialog_action, text: "OK", on_click: ->(_e) { page.pop_dialog })
         ]
@@ -25,6 +25,17 @@ module RufletStudio
         ]
       )
 
+      radio_group = page.radio_group(
+        value: "r1",
+        content: page.row(
+          spacing: 8,
+          controls: [
+            page.control(:cupertino_radio, label: "Radio 1", value: "r1"),
+            page.control(:cupertino_radio, label: "Radio 2", value: "r2")
+          ]
+        )
+      )
+
       page.column(
         spacing: 12,
         controls: [
@@ -33,13 +44,7 @@ module RufletStudio
           page.control(:cupertino_checkbox, label: "Checkbox"),
           page.control(:cupertino_switch, label: "Switch"),
           page.control(:cupertino_slider, min: 0, max: 100, divisions: 10, value: 50),
-          page.row(
-            spacing: 8,
-            controls: [
-              page.control(:cupertino_radio, label: "Radio 1", value: "r1", group: radio_group),
-              page.control(:cupertino_radio, label: "Radio 2", value: "r2", group: radio_group)
-            ]
-          ),
+          radio_group,
           page.column(
             spacing: 8,
             controls: [

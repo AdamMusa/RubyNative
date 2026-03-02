@@ -6,17 +6,17 @@ module RufletStudio
       route = "/home"
       page.view(
         route: route,
-        bgcolor: "#111318",
+        bgcolor: color_bg(page),
         appbar: page.app_bar(
-          bgcolor: "#111318",
-          color: "#e7e9ec",
+          bgcolor: color_surface(page),
+          color: color_text(page),
           title: page.text(value: "Home", size: 20)
         ),
         navigation_bar: nav_bar(page, route),
         padding: 16,
         controls: [
-          page.text(value: "Home", size: 18, color: "#e7e9ec"),
-          page.text(value: "Use the Gallery tab to explore controls.", color: "#9aa0a6")
+          page.text(value: "Home", size: 18, color: color_text(page)),
+          page.text(value: "Use the Gallery tab to explore controls.", color: color_subtle(page))
         ]
       )
     end

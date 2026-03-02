@@ -6,12 +6,12 @@ module RufletStudio
       route = "/gallery"
       page.view(
         route: route,
-        bgcolor: "#111318",
+        bgcolor: color_bg(page),
         scroll: "auto",
         padding: 8,
         appbar: page.app_bar(
-          bgcolor: "#111318",
-          color: "#e7e9ec",
+          bgcolor: color_surface(page),
+          color: color_text(page),
           title: page.text(value: "Gallery", size: 20)
         ),
         navigation_bar: nav_bar(page, route),
@@ -44,9 +44,9 @@ module RufletStudio
     def tile(page, icon, title, route)
       page.control(
         :list_tile,
-        leading: page.icon(name: icon, color: "#cfd4da"),
-        title: page.text(value: title, color: "#e7e9ec", size: 16),
-        trailing: page.icon(name: "chevron_right", color: "#6c757d"),
+        leading: page.icon(name: icon, color: color_icon(page)),
+        title: page.text(value: title, color: color_text(page), size: 16),
+        trailing: page.icon(name: "chevron_right", color: color_subtle(page)),
         on_click: ->(_e) { page.go(route) }
       )
     end
