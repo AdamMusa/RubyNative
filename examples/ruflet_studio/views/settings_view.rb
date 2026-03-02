@@ -4,17 +4,16 @@ module RufletStudio
   module Views
     def settings_view(page)
       route = "/settings"
-      theme_group = page.radio_group(value: "system")
       gestures_shake = page.checkbox(value: false)
       gestures_long_press = page.checkbox(value: false)
       gestures_shake_state = false
       gestures_long_press_state = false
       page.view(
         route: route,
-        bgcolor: "#111318",
+        bgcolor: color_bg(page),
         appbar: page.app_bar(
-          bgcolor: "#111318",
-          color: "#e7e9ec",
+          bgcolor: color_surface(page),
+          color: color_text(page),
           title: page.text(value: "Settings", size: 20)
         ),
         navigation_bar: nav_bar(page, route),
@@ -24,10 +23,16 @@ module RufletStudio
           page.column(
             spacing: 16,
             controls: [
-              page.text(value: "Theme", size: 14, color: "#cfd4da"),
+              page.text(value: "Theme", size: 14, color: color_icon(page)),
               page.control(
                 :radiogroup,
-                value: "system",
+                value: theme_mode,
+                on_change: ->(e) {
+                  value = read_string(e.data, "value") || read_string(e.data, "selected") || e.data.to_s
+                  set_theme(page, value)
+                  page.views = [settings_view(page)]
+                  page.update
+                },
                 content: page.column(
                   spacing: 14,
                   controls: [
@@ -37,8 +42,8 @@ module RufletStudio
                         page.row(
                           spacing: 12,
                           controls: [
-                            page.icon(name: "contrast", color: "#cfd4da"),
-                            page.text(value: "System", color: "#e7e9ec")
+                            page.icon(name: "contrast", color: color_icon(page)),
+                            page.text(value: "System", color: color_text(page))
                           ]
                         ),
                         page.radio(value: "system")
@@ -50,8 +55,8 @@ module RufletStudio
                         page.row(
                           spacing: 12,
                           controls: [
-                            page.icon(name: "light_mode", color: "#cfd4da"),
-                            page.text(value: "Light", color: "#e7e9ec")
+                            page.icon(name: "light_mode", color: color_icon(page)),
+                            page.text(value: "Light", color: color_text(page))
                           ]
                         ),
                         page.radio(value: "light")
@@ -63,8 +68,8 @@ module RufletStudio
                         page.row(
                           spacing: 12,
                           controls: [
-                            page.icon(name: "dark_mode", color: "#cfd4da"),
-                            page.text(value: "Dark", color: "#e7e9ec")
+                            page.icon(name: "dark_mode", color: color_icon(page)),
+                            page.text(value: "Dark", color: color_text(page))
                           ]
                         ),
                         page.radio(value: "dark")
@@ -73,12 +78,12 @@ module RufletStudio
                   ]
                 )
               ),
-              page.container(height: 1, bgcolor: "#2a2e36", margin: { top: 8, bottom: 8 }),
-              page.text(value: "Home gestures", size: 14, color: "#cfd4da"),
+              page.container(height: 1, bgcolor: color_divider(page), margin: { top: 8, bottom: 8 }),
+              page.text(value: "Home gestures", size: 14, color: color_icon(page)),
               page.control(
                 :list_tile,
-                leading: page.icon(name: "vibration", color: "#cfd4da"),
-                title: page.text(value: "Shake device", color: "#e7e9ec"),
+                leading: page.icon(name: "vibration", color: color_icon(page)),
+                title: page.text(value: "Shake device", color: color_text(page)),
                 trailing: gestures_shake,
                 on_click: ->(_e) {
                   gestures_shake_state = !gestures_shake_state
@@ -87,35 +92,35 @@ module RufletStudio
               ),
               page.control(
                 :list_tile,
-                leading: page.icon(name: "pan_tool_alt", color: "#cfd4da"),
-                title: page.text(value: "Long press with two fingers", color: "#e7e9ec"),
+                leading: page.icon(name: "pan_tool_alt", color: color_icon(page)),
+                title: page.text(value: "Long press with two fingers", color: color_text(page)),
                 trailing: gestures_long_press,
                 on_click: ->(_e) {
                   gestures_long_press_state = !gestures_long_press_state
                   page.update(gestures_long_press, value: gestures_long_press_state)
                 }
               ),
-              page.container(height: 1, bgcolor: "#2a2e36", margin: { top: 8, bottom: 8 }),
-              page.text(value: "Application details", size: 14, color: "#cfd4da"),
+              page.container(height: 1, bgcolor: color_divider(page), margin: { top: 8, bottom: 8 }),
+              page.text(value: "Application details", size: 14, color: color_icon(page)),
               page.row(
                 alignment: "spaceBetween",
                 controls: [
-                  page.text(value: "Client version:", color: "#e7e9ec"),
-                  page.text(value: "#{Ruflet::VERSION}", color: "#9aa0a6")
+                  page.text(value: "Client version:", color: color_text(page)),
+                  page.text(value: "#{Ruflet::VERSION}", color: color_subtle(page))
                 ]
               ),
               page.row(
                 alignment: "spaceBetween",
                 controls: [
-                  page.text(value: "Ruflet SDK version:", color: "#e7e9ec"),
-                  page.text(value: "#{Ruflet::VERSION}", color: "#9aa0a6")
+                  page.text(value: "Ruflet SDK version:", color: color_text(page)),
+                  page.text(value: "#{Ruflet::VERSION}", color: color_subtle(page))
                 ]
               ),
               page.row(
                 alignment: "spaceBetween",
                 controls: [
-                  page.text(value: "Ruby version:", color: "#e7e9ec"),
-                  page.text(value: "#{RUBY_VERSION}", color: "#9aa0a6")
+                  page.text(value: "Ruby version:", color: color_text(page)),
+                  page.text(value: "#{RUBY_VERSION}", color: color_subtle(page))
                 ]
               )
             ]

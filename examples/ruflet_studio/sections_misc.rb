@@ -5,8 +5,8 @@ module RufletStudio
     def build_charts(page, status)
       bar_chart = page.control(
         :barchart,
-        width: 360,
-        height: 220,
+        width: 320,
+        height: 180,
         max_y: 110,
         border: { width: 1, color: "#2a2e36" },
         horizontal_grid_lines: { color: "#2a2e36", width: 1, dash_pattern: [3, 3] },
@@ -52,16 +52,16 @@ module RufletStudio
         min_x: 0,
         max_x: 14,
         interactive: true,
-        width: 360,
-        height: 220,
+        width: 320,
+        height: 180,
         tooltip: nil,
         on_event: ->(e) { page.update(status, value: "Line chart event: #{e.data}") }
       )
 
       pie_chart = page.control(
         :piechart,
-        width: 260,
-        height: 260,
+        width: 220,
+        height: 220,
         sections_space: 0,
         center_space_radius: 0,
         sections: [
@@ -75,8 +75,8 @@ module RufletStudio
 
       candlestick_chart = page.control(
         :candlestickchart,
-        width: 360,
-        height: 220,
+        width: 320,
+        height: 180,
         min_x: -0.5,
         max_x: 6.5,
         min_y: 22,
@@ -91,8 +91,8 @@ module RufletStudio
 
       radar_chart = page.control(
         :radarchart,
-        width: 320,
-        height: 220,
+        width: 300,
+        height: 180,
         titles: [
           page.control(:radarcharttitle, text: "macOS"),
           page.control(:radarcharttitle, text: "Linux"),
@@ -110,8 +110,8 @@ module RufletStudio
 
       scatter_chart = page.control(
         :scatterchart,
-        width: 320,
-        height: 220,
+        width: 300,
+        height: 180,
         min_x: 0,
         max_x: 50,
         min_y: 0,
@@ -148,16 +148,36 @@ module RufletStudio
     end
 
     def build_drawing(page, status)
+      strokes = []
+      last_point = nil
+
       canvas = page.control(
         :canvas,
         width: 260,
         height: 260,
-        shapes: [
-          page.control(:line, x1: 10, y1: 10, x2: 250, y2: 250, paint: { stroke_width: 3, color: "#ff6b6b" })
-        ],
+        shapes: [],
         content: page.gesture_detector(
-          on_pan_start: ->(e) { page.update(status, value: "Canvas pan start: #{fmt_pos(e)}") },
-          on_pan_update: ->(e) { page.update(status, value: "Canvas pan update: #{fmt_pos(e)}") }
+          on_pan_start: ->(e) {
+            pos = extract_pos(e)
+            last_point = pos
+            page.update(status, value: "Canvas pan start: #{fmt_pos(e)}")
+          },
+          on_pan_update: ->(e) {
+            pos = extract_pos(e)
+            if last_point && pos
+              strokes << page.control(
+                :line,
+                x1: last_point[:x],
+                y1: last_point[:y],
+                x2: pos[:x],
+                y2: pos[:y],
+                paint: { stroke_width: 3, color: "#ff6b6b" }
+              )
+              page.update(canvas, shapes: strokes)
+            end
+            last_point = pos
+            page.update(status, value: "Canvas pan update: #{fmt_pos(e)}")
+          }
         )
       )
 

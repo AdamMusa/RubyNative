@@ -6,22 +6,23 @@ module RufletStudio
       route = page.route
       page.view(
         route: route,
-        bgcolor: "#111318",
+        bgcolor: color_bg(page),
+        scroll: "auto",
         appbar: page.app_bar(
-          bgcolor: "#111318",
-          color: "#e7e9ec",
+          bgcolor: color_surface(page),
+          color: color_text(page),
           title: page.text(value: title, size: 18),
           leading: page.icon_button(
             icon: "arrow_back",
             on_click: ->(_e) { page.go("/gallery") }
-          )
+          ),
+          actions: []
         ),
         navigation_bar: nav_bar(page, "/gallery"),
         padding: 16,
         controls: [
           page.column(
             spacing: 12,
-            scroll: "auto",
             controls: [
               content
             ]

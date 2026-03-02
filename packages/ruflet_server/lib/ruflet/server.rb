@@ -357,6 +357,8 @@ module Ruflet
         on_control_event(ws, payload)
       when Protocol::ACTIONS[:update_control], Protocol::ACTIONS[:update_control_props]
         on_update_control(ws, payload)
+      when Protocol::ACTIONS[:invoke_control_method]
+        on_invoke_control_method(ws, payload)
       else
         raise "Unknown action: #{action.inspect}"
       end
@@ -434,6 +436,11 @@ module Ruflet
     rescue StandardError => e
       send_message(ws, Protocol::ACTIONS[:session_crashed], { "message" => e.message })
       raise
+    end
+
+    def on_invoke_control_method(_ws, _payload)
+      # Client response to invoke_control_method; no server-side handling yet.
+      nil
     end
 
     def on_control_event(ws, payload)

@@ -15,11 +15,11 @@ module RufletStudio
 
       banner = page.control(
         :banner,
-        open: true,
+        open: false,
         leading: page.icon(name: "info"),
         content: page.text(value: "Backup completed successfully."),
         actions: [
-          page.text_button(text: "Dismiss", on_click: ->(_e) { page.pop_dialog })
+          page.text_button(text: "Dismiss", on_click: ->(_e) { page.update(banner, open: false) })
         ]
       )
 
@@ -68,7 +68,7 @@ module RufletStudio
                 spacing: 8,
                 controls: [
                   page.text(value: "Selection", size: 14, weight: "w600", color: "#e7e9ec"),
-                  page.switch(label: "Wi-Fi", value: true),
+                  page.control(:switch, label: "Wi-Fi", value: true),
                   page.control(:slider, min: 0, max: 100, divisions: 10, value: 35, label: "Value = {value}")
                 ]
               )
@@ -83,6 +83,22 @@ module RufletStudio
                 controls: [
                   page.text(value: "Dialogs", size: 14, weight: "w600", color: "#e7e9ec"),
                   page.text_button(text: "Show dialog", on_click: ->(_e) { page.show_dialog(material_dialog) })
+                ]
+              )
+            )
+          ),
+          page.control(
+            :card,
+            content: page.container(
+              padding: 12,
+              content: page.column(
+                spacing: 8,
+                controls: [
+                  page.text(value: "Banners", size: 14, weight: "w600", color: "#e7e9ec"),
+                  page.text_button(text: "Show banner", on_click: ->(_e) {
+                    banner.props["open"] = true
+                    page.update(banner, open: true)
+                  })
                 ]
               )
             )

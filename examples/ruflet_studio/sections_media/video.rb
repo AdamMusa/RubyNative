@@ -18,8 +18,15 @@ module RufletStudio
         playback_rate: 1.0,
         on_load: ->(_e) { page.update(status, value: "Video loaded") },
         on_enter_fullscreen: ->(_e) { page.update(status, value: "Video fullscreen") },
-        on_exit_fullscreen: ->(_e) { page.update(status, value: "Video exit fullscreen") }
+        on_exit_fullscreen: ->(_e) { page.update(status, value: "Video exit fullscreen") },
+        on_state_change: ->(e) { page.update(status, value: "Video state: #{e.data}") },
+        on_error: ->(e) { page.update(status, value: "Video error: #{e.data}") }
       )
+
+      send_video = lambda do |label, method_name, args: nil|
+        page.update(status, value: "Video: #{label}")
+        page.invoke(video, method_name, args: args)
+      end
 
       page.column(
         spacing: 8,
@@ -32,18 +39,18 @@ module RufletStudio
               page.column(
                 spacing: 8,
                 controls: [
-                  page.button(text: "Play", on_click: ->(_e) { page.invoke(video, "play") }),
-                  page.button(text: "Pause", on_click: ->(_e) { page.invoke(video, "pause") }),
-                  page.button(text: "Play/Pause", on_click: ->(_e) { page.invoke(video, "play_or_pause") }),
-                  page.button(text: "Stop", on_click: ->(_e) { page.invoke(video, "stop") }),
-                  page.button(text: "Next", on_click: ->(_e) { page.invoke(video, "next") }),
-                  page.button(text: "Prev", on_click: ->(_e) { page.invoke(video, "previous") })
+                  page.button(text: "Play", on_click: ->(_e) { send_video.call("Play", "play") }),
+                  page.button(text: "Pause", on_click: ->(_e) { send_video.call("Pause", "pause") }),
+                  page.button(text: "Play/Pause", on_click: ->(_e) { send_video.call("Play/Pause", "play_or_pause") }),
+                  page.button(text: "Stop", on_click: ->(_e) { send_video.call("Stop", "stop") }),
+                  page.button(text: "Next", on_click: ->(_e) { send_video.call("Next", "next") }),
+                  page.button(text: "Prev", on_click: ->(_e) { send_video.call("Prev", "previous") })
                 ]
               ),
               page.column(
                 spacing: 8,
                 controls: [
-                  page.button(text: "Seek 10s", on_click: ->(_e) { page.invoke(video, "seek", args: { position: 10_000 }) }),
+                  page.button(text: "Seek 10s", on_click: ->(_e) { send_video.call("Seek 10s", "seek", args: { position: 10_000 }) }),
                   page.button(text: "Fullscreen", on_click: ->(_e) { page.update(video, fullscreen: true) })
                 ]
               ),

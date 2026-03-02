@@ -2,6 +2,52 @@
 
 module RufletStudio
   module Helpers
+    def theme_mode
+      @theme_mode ||= "system"
+    end
+
+    def effective_theme(page)
+      return theme_mode unless theme_mode == "system"
+
+      brightness = page.client_details&.dig("platform_brightness") || page.client_details&.dig(:platform_brightness)
+      brightness == "dark" ? "dark" : "light"
+    end
+
+    def set_theme(page, mode)
+      @theme_mode = %w[system light dark].include?(mode) ? mode : "system"
+      page.go(page.route || "/settings")
+    end
+
+    def theme_colors(page)
+      if effective_theme(page) == "light"
+        {
+          bg: "#f4f5f7",
+          surface: "#ffffff",
+          text: "#1f2328",
+          subtle: "#6c757d",
+          icon: "#495057",
+          divider: "#dee2e6"
+        }
+      else
+        {
+          bg: "#111318",
+          surface: "#111318",
+          text: "#e7e9ec",
+          subtle: "#9aa0a6",
+          icon: "#cfd4da",
+          divider: "#2a2e36"
+        }
+      end
+    end
+
+
+    def color_bg(page) = theme_colors(page)[:bg]
+    def color_surface(page) = theme_colors(page)[:surface]
+    def color_text(page) = theme_colors(page)[:text]
+    def color_subtle(page) = theme_colors(page)[:subtle]
+    def color_icon(page) = theme_colors(page)[:icon]
+    def color_divider(page) = theme_colors(page)[:divider]
+
     def read_number(data, key)
       return nil unless data
       return data if data.is_a?(Numeric)
@@ -10,6 +56,13 @@ module RufletStudio
       if data.is_a?(Hash) && data[key]
         return data[key].to_f
       end
+      nil
+    end
+
+    def read_string(data, key)
+      return nil unless data
+      return data if data.is_a?(String)
+      return data[key] if data.is_a?(Hash) && data[key].is_a?(String)
       nil
     end
 
@@ -43,6 +96,19 @@ module RufletStudio
         return "#{x}, #{y}" if x && y
       end
       event.data.to_s
+    end
+
+    def extract_pos(event)
+      return nil unless event&.data.is_a?(Hash)
+
+      pos = event.data["localPosition"] || event.data["local_position"] || event.data
+      return nil unless pos.is_a?(Hash)
+
+      x = pos["x"] || pos[:x]
+      y = pos["y"] || pos[:y]
+      return nil unless x && y
+
+      { x: x.to_f, y: y.to_f }
     end
   end
 end
