@@ -13,15 +13,17 @@ module RufletStudio
         ]
       )
 
-      banner = page.control(
-        :banner,
-        open: false,
-        leading: page.icon(name: "info"),
-        content: page.text(value: "Backup completed successfully."),
-        actions: [
-          page.text_button(text: "Dismiss", on_click: ->(_e) { page.update(banner, open: false) })
-        ]
-      )
+      build_banner = lambda do
+        page.control(
+          :banner,
+          open: true,
+          leading: page.icon(name: "info"),
+          content: page.text(value: "Backup completed successfully."),
+          actions: [
+            page.text_button(text: "Dismiss", on_click: ->(_e) { page.pop_dialog })
+          ]
+        )
+      end
 
       page.column(
         spacing: 12,
@@ -34,7 +36,7 @@ module RufletStudio
               content: page.column(
                 spacing: 8,
                 controls: [
-                  page.text(value: "TextField", size: 14, weight: "w600", color: "#e7e9ec"),
+                  page.text(value: "TextField", size: 14, weight: "w600", color: "#1f2328"),
                   page.text_field(label: "Name", value: "Ruflet")
                 ]
               )
@@ -47,7 +49,7 @@ module RufletStudio
               content: page.column(
                 spacing: 8,
                 controls: [
-                  page.text(value: "Buttons", size: 14, weight: "w600", color: "#e7e9ec"),
+                  page.text(value: "Buttons", size: 14, weight: "w600", color: "#1f2328"),
                   page.row(
                     spacing: 8,
                     controls: [
@@ -67,7 +69,7 @@ module RufletStudio
               content: page.column(
                 spacing: 8,
                 controls: [
-                  page.text(value: "Selection", size: 14, weight: "w600", color: "#e7e9ec"),
+                  page.text(value: "Selection", size: 14, weight: "w600", color: "#1f2328"),
                   page.control(:switch, label: "Wi-Fi", value: true),
                   page.control(:slider, min: 0, max: 100, divisions: 10, value: 35, label: "Value = {value}")
                 ]
@@ -81,7 +83,7 @@ module RufletStudio
               content: page.column(
                 spacing: 8,
                 controls: [
-                  page.text(value: "Dialogs", size: 14, weight: "w600", color: "#e7e9ec"),
+                  page.text(value: "Dialogs", size: 14, weight: "w600", color: "#1f2328"),
                   page.text_button(text: "Show dialog", on_click: ->(_e) { page.show_dialog(material_dialog) })
                 ]
               )
@@ -94,17 +96,15 @@ module RufletStudio
               content: page.column(
                 spacing: 8,
                 controls: [
-                  page.text(value: "Banners", size: 14, weight: "w600", color: "#e7e9ec"),
+                  page.text(value: "Banners", size: 14, weight: "w600", color: "#1f2328"),
                   page.text_button(text: "Show banner", on_click: ->(_e) {
-                    banner.props["open"] = true
-                    page.update(banner, open: true)
+                    page.show_dialog(build_banner.call)
                   })
                 ]
               )
             )
           ),
-          page.control(:list_tile, leading: page.icon(name: "info"), title: page.text(value: "ListTile")),
-          banner
+          page.control(:list_tile, leading: page.icon(name: "info"), title: page.text(value: "ListTile"))
         ]
       )
     end

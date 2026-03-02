@@ -68,12 +68,18 @@ module Ruflet
         id: "_overlay",
         controls: []
       )
+      @services_container = Ruflet::Control.new(
+        type: "service_registry",
+        id: "_services",
+        "_services": []
+      )
       @dialogs_container = Ruflet::Control.new(
         type: "dialogs",
         id: "_dialogs",
         controls: []
       )
       refresh_overlay_container!
+      refresh_services_container!
       refresh_dialogs_container!
     end
 
@@ -154,6 +160,24 @@ module Ruflet
 
       send_view_patch
 
+      self
+    end
+
+    def services
+      @services_container.props["_services"] ||= []
+    end
+
+    def services=(value)
+      @services_container.props["_services"] = Array(value).compact
+      refresh_services_container!
+      push_services_update!
+      self
+    end
+
+    def add_service(*value)
+      @services_container.props["_services"] = services + value.flatten.compact
+      refresh_services_container!
+      push_services_update!
       self
     end
 
@@ -271,6 +295,7 @@ module Ruflet
       return nil unless dialog_control
 
       dialog_control.props["open"] = false
+      @dialogs.delete(dialog_control)
       refresh_dialogs_container!
       push_dialogs_update!
       dialog_control
@@ -291,7 +316,21 @@ module Ruflet
       control = resolve_control(control_or_id)
       return self unless control
 
-      patch = normalize_props(props)
+      visited = Set.new
+      props.each_value { |value| register_embedded_value(value, visited) }
+
+      raw_props = props.dup
+      if BUTTON_TEXT_TYPES.include?(control.type)
+        if raw_props.key?(:text) || raw_props.key?("text")
+          text_value = raw_props.key?(:text) ? raw_props.delete(:text) : raw_props.delete("text")
+          raw_props[:content] = text_value unless raw_props.key?(:content) || raw_props.key?("content")
+        end
+      end
+
+      normalized_control_props = control.send(:normalize_props, raw_props)
+      normalized_control_props.each { |k, v| control.props[k] = v }
+
+      patch = normalize_props(raw_props)
       if BUTTON_TEXT_TYPES.include?(control.type) && patch.key?("text")
         patch["content"] = patch.delete("text")
       end
@@ -470,8 +509,30 @@ module Ruflet
         return codepoint unless codepoint.nil?
       end
 
+      if value.is_a?(Ruflet::Control)
+        register_control_tree(value, Set.new)
+        return value.to_patch
+      end
+      return serialize_value(value) if value.is_a?(Array) || value.is_a?(Hash)
+
       return value.value if value.is_a?(Ruflet::IconData)
       value.is_a?(Symbol) ? value.to_s : value
+    end
+
+    def serialize_value(value)
+      case value
+      when Ruflet::Control
+        register_control_tree(value, Set.new)
+        value.to_patch
+      when Ruflet::IconData
+        value.value
+      when Array
+        value.map { |v| serialize_value(v) }
+      when Hash
+        value.transform_values { |v| serialize_value(v) }
+      else
+        value
+      end
     end
 
     def build_route(route, query_params = {})
@@ -539,6 +600,23 @@ module Ruflet
 
     def refresh_overlay_container!
       @page_props["_overlay"] = @overlay_container
+    end
+
+    def refresh_services_container!
+      @page_props["_services"] = @services_container
+    end
+
+    def push_services_update!
+      refresh_control_indexes!
+
+      if @services_container.wire_id
+        send_message(Protocol::ACTIONS[:patch_control], {
+          "id" => @services_container.wire_id,
+          "patch" => [[0], [0, 0, "_services", serialize_patch_value(@services_container.props["_services"])]]
+        })
+      else
+        send_view_patch
+      end
     end
 
     def push_dialogs_update!

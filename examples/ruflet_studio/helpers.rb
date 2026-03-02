@@ -87,9 +87,21 @@ module RufletStudio
     end
 
     def fmt_pos(event)
-      return "?" unless event&.data.is_a?(Hash)
+      return "?" unless event&.data
 
-      pos = event.data["localPosition"] || event.data["local_position"] || event.data
+      data = event.data
+      if data.is_a?(String)
+        begin
+          data = JSON.parse(data)
+        rescue StandardError
+          return event.data.to_s
+        end
+      end
+
+      return event.data.to_s unless data.is_a?(Hash)
+
+      pos = data["localPosition"] || data["local_position"] || data[:localPosition] || data[:local_position] ||
+        data["l"] || data[:l] || data["g"] || data[:g] || data
       if pos.is_a?(Hash)
         x = pos["x"] || pos[:x]
         y = pos["y"] || pos[:y]
@@ -99,9 +111,21 @@ module RufletStudio
     end
 
     def extract_pos(event)
-      return nil unless event&.data.is_a?(Hash)
+      return nil unless event&.data
 
-      pos = event.data["localPosition"] || event.data["local_position"] || event.data
+      data = event.data
+      if data.is_a?(String)
+        begin
+          data = JSON.parse(data)
+        rescue StandardError
+          return nil
+        end
+      end
+
+      return nil unless data.is_a?(Hash)
+
+      pos = data["localPosition"] || data["local_position"] || data[:localPosition] || data[:local_position] ||
+        data["l"] || data[:l] || data["g"] || data[:g] || data
       return nil unless pos.is_a?(Hash)
 
       x = pos["x"] || pos[:x]

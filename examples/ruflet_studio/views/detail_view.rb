@@ -21,12 +21,7 @@ module RufletStudio
         navigation_bar: nav_bar(page, "/gallery"),
         padding: 16,
         controls: [
-          page.column(
-            spacing: 12,
-            controls: [
-              content
-            ]
-          )
+          content
         ]
       )
     end
