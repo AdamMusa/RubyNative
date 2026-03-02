@@ -6,10 +6,10 @@ module RufletStudio
       radio_group = page.radio_group(value: "r1")
       cupertino_dialog = page.control(
         :cupertino_alert_dialog,
-        title: "Cupertino",
-        content: "Hello from Cupertino",
+        title: page.text(value: "Cupertino"),
+        content: page.text(value: "Hello from Cupertino"),
         actions: [
-          page.control(:cupertino_dialog_action, text: "OK", on_click: ->(_e) { page.pop_dialog })
+          page.control(:cupertino_dialog_action, content: "OK", on_click: ->(_e) { page.pop_dialog })
         ]
       )
 
