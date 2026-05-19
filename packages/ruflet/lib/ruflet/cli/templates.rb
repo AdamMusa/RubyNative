@@ -5,7 +5,7 @@ module Ruflet
     MAIN_TEMPLATE = <<~RUBY
     require "ruflet"
     Ruflet.run do |page|
-      page.title = "Counter Demo"
+      page.title = "%<app_title>s"
       count = 0
       count_text = text(count.to_s, style: {size: 40})
       page.add(
@@ -36,6 +36,7 @@ module Ruflet
     GEMFILE_TEMPLATE = <<~GEMFILE
       source "https://rubygems.org"
 
+      gem "ruflet", ">= #{Ruflet::VERSION}"
       gem "ruflet_core", ">= #{Ruflet::VERSION}"
       gem "ruflet_server", ">= #{Ruflet::VERSION}"
     GEMFILE
