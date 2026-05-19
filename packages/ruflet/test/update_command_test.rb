@@ -207,7 +207,7 @@ class RufletCliUpdateCommandTest < Minitest::Test
     end
   end
 
-  def test_self_contained_service_extension_config_restores_full_client_extensions
+  def test_self_contained_service_extension_config_uses_configured_services_only
     builder = DummyBuilder.new
 
     Dir.mktmpdir do |dir|
@@ -268,7 +268,7 @@ class RufletCliUpdateCommandTest < Minitest::Test
       Ruflet::CLI.singleton_class.send(:private, :resolve_ruflet_client_template_root)
 
       begin
-        builder.send(:apply_service_extension_config, client_dir, {}, self_contained: true)
+        builder.send(:apply_service_extension_config, client_dir, { "services" => ["webview"] }, self_contained: true)
 
         pubspec = YAML.safe_load(File.read(File.join(client_dir, "pubspec.yaml")), aliases: true)
         assert pubspec.dig("dependencies", "flet_webview")
@@ -276,6 +276,79 @@ class RufletCliUpdateCommandTest < Minitest::Test
         main = File.read(File.join(client_dir, "lib", "main.self.dart"))
         assert_includes main, "package:flet_webview/flet_webview.dart"
         assert_includes main, "ruflet_webview.Extension(),"
+      ensure
+        Ruflet::CLI.define_singleton_method(:resolve_ruflet_client_template_root, original_method)
+        Ruflet::CLI.singleton_class.send(:private, :resolve_ruflet_client_template_root)
+      end
+    end
+  end
+
+  def test_self_contained_service_extension_config_does_not_add_unconfigured_extensions
+    builder = DummyBuilder.new
+
+    Dir.mktmpdir do |dir|
+      template_dir = File.join(dir, "template")
+      client_dir = File.join(dir, "client")
+      FileUtils.mkdir_p(File.join(template_dir, "lib"))
+      FileUtils.mkdir_p(File.join(client_dir, "lib"))
+
+      File.write(
+        File.join(template_dir, "pubspec.yaml"),
+        <<~YAML
+          dependencies:
+            flutter:
+              sdk: flutter
+            flet: any
+            flet_webview: any
+        YAML
+      )
+      File.write(
+        File.join(template_dir, "lib", "main.self.dart"),
+        <<~DART
+          import 'package:flet/flet.dart';
+          import 'package:flet_webview/flet_webview.dart' as ruflet_webview;
+
+          void main() {
+            final extensions = <FletExtension>[
+              ruflet_webview.Extension(),
+            ];
+          }
+        DART
+      )
+      File.write(
+        File.join(client_dir, "pubspec.yaml"),
+        <<~YAML
+          dependencies:
+            flutter:
+              sdk: flutter
+            flet: any
+        YAML
+      )
+      File.write(
+        File.join(client_dir, "lib", "main.self.dart"),
+        <<~DART
+          import 'package:flet/flet.dart';
+
+          void main() {
+            final extensions = <FletExtension>[
+            ];
+          }
+        DART
+      )
+
+      original_method = Ruflet::CLI.method(:resolve_ruflet_client_template_root)
+      Ruflet::CLI.define_singleton_method(:resolve_ruflet_client_template_root) { template_dir }
+      Ruflet::CLI.singleton_class.send(:private, :resolve_ruflet_client_template_root)
+
+      begin
+        builder.send(:apply_service_extension_config, client_dir, {}, self_contained: true)
+
+        pubspec = YAML.safe_load(File.read(File.join(client_dir, "pubspec.yaml")), aliases: true)
+        refute pubspec.dig("dependencies", "flet_webview")
+
+        main = File.read(File.join(client_dir, "lib", "main.self.dart"))
+        refute_includes main, "package:flet_webview/flet_webview.dart"
+        refute_includes main, "ruflet_webview.Extension(),"
       ensure
         Ruflet::CLI.define_singleton_method(:resolve_ruflet_client_template_root, original_method)
         Ruflet::CLI.singleton_class.send(:private, :resolve_ruflet_client_template_root)

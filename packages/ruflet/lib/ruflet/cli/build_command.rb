@@ -990,12 +990,7 @@ module Ruflet
 
       def apply_service_extension_config(client_dir, config = {}, self_contained: @ruflet_self_contained_build)
         services = Array(config["services"])
-        extension_keys =
-          if self_contained
-            CLIENT_EXTENSION_MAP.keys
-          else
-            services.map { |v| normalize_extension_key(v) }.compact.uniq
-          end
+        extension_keys = services.map { |v| normalize_extension_key(v) }.compact.uniq
         extension_packages = extension_keys.filter_map { |key| CLIENT_EXTENSION_MAP[key]&.fetch(:package) }.uniq
         extension_aliases = extension_keys.filter_map { |key| CLIENT_EXTENSION_MAP[key]&.fetch(:alias) }.uniq
 
