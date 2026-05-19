@@ -196,7 +196,10 @@ module Ruflet
             backend_url: ""
 
           # Source of truth for Flutter client extensions/plugins.
-          # Examples: camera, video, audio, flashlight, webview, map
+          # To test every extension, list all services:
+          # ads, audio, audio_recorder, camera, charts, code_editor, color_pickers,
+          # datatable2, flashlight, geolocator, lottie, map, permission_handler,
+          # secure_storage, video, webview
           services: []
 
           # Build assets configuration consumed by `ruflet build`.

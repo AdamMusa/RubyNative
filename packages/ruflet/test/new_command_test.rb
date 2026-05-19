@@ -79,6 +79,17 @@ class RufletCliNewCommandTest < Minitest::Test
     refute_includes spec.files, "assets/bootstrap/ruby_runtime.tar.gz"
   end
 
+  def test_default_ruflet_config_documents_every_known_service_key
+    Dir.mktmpdir do |dir|
+      Ruflet::CLI.send(:write_default_ruflet_config, dir, "demo_app")
+
+      config = File.read(File.join(dir, "ruflet.yaml"))
+      Ruflet::CLI::NewCommand::CLIENT_EXTENSION_MAP.keys.each do |service|
+        assert_includes config, service
+      end
+    end
+  end
+
   def test_copy_ruflet_client_template_ignores_missing_template
     Dir.mktmpdir do |dir|
       target_root = File.join(dir, "demo")

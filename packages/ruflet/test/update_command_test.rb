@@ -356,6 +356,86 @@ class RufletCliUpdateCommandTest < Minitest::Test
     end
   end
 
+  def test_self_contained_service_extension_config_can_enable_every_known_extension
+    builder = DummyBuilder.new
+    extension_map = Ruflet::CLI::BuildCommand::CLIENT_EXTENSION_MAP
+
+    Dir.mktmpdir do |dir|
+      template_dir = File.join(dir, "template")
+      client_dir = File.join(dir, "client")
+      FileUtils.mkdir_p(File.join(template_dir, "lib"))
+      FileUtils.mkdir_p(File.join(client_dir, "lib"))
+
+      template_dependencies = extension_map.values.map { |meta| "            #{meta[:package]}: any\n" }.join
+      template_imports = extension_map.values.map do |meta|
+        "          import 'package:#{meta[:package]}/#{meta[:package]}.dart' as #{meta[:alias]};\n"
+      end.join
+      template_extensions = extension_map.values.map { |meta| "              #{meta[:alias]}.Extension(),\n" }.join
+
+      File.write(
+        File.join(template_dir, "pubspec.yaml"),
+        <<~YAML
+          dependencies:
+            flutter:
+              sdk: flutter
+            flet: any
+#{template_dependencies}
+        YAML
+      )
+      File.write(
+        File.join(template_dir, "lib", "main.self.dart"),
+        <<~DART
+          import 'package:flet/flet.dart';
+#{template_imports}
+          void main() {
+            final extensions = <FletExtension>[
+#{template_extensions}
+            ];
+          }
+        DART
+      )
+      File.write(
+        File.join(client_dir, "pubspec.yaml"),
+        <<~YAML
+          dependencies:
+            flutter:
+              sdk: flutter
+            flet: any
+        YAML
+      )
+      File.write(
+        File.join(client_dir, "lib", "main.self.dart"),
+        <<~DART
+          import 'package:flet/flet.dart';
+
+          void main() {
+            final extensions = <FletExtension>[
+            ];
+          }
+        DART
+      )
+
+      original_method = Ruflet::CLI.method(:resolve_ruflet_client_template_root)
+      Ruflet::CLI.define_singleton_method(:resolve_ruflet_client_template_root) { template_dir }
+      Ruflet::CLI.singleton_class.send(:private, :resolve_ruflet_client_template_root)
+
+      begin
+        builder.send(:apply_service_extension_config, client_dir, { "services" => extension_map.keys }, self_contained: true)
+
+        pubspec = YAML.safe_load(File.read(File.join(client_dir, "pubspec.yaml")), aliases: true)
+        main = File.read(File.join(client_dir, "lib", "main.self.dart"))
+        extension_map.values.each do |meta|
+          assert pubspec.dig("dependencies", meta[:package]), "Expected #{meta[:package]} dependency"
+          assert_includes main, "package:#{meta[:package]}/#{meta[:package]}.dart"
+          assert_includes main, "#{meta[:alias]}.Extension(),"
+        end
+      ensure
+        Ruflet::CLI.define_singleton_method(:resolve_ruflet_client_template_root, original_method)
+        Ruflet::CLI.singleton_class.send(:private, :resolve_ruflet_client_template_root)
+      end
+    end
+  end
+
   def test_update_pubspec_value_preserves_formatted_flutter_assets
     builder = DummyBuilder.new
 
