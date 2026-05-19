@@ -1,0 +1,27 @@
+app:
+  name: ruflet stuido
+  display_name: Suflet Stuido
+  package_name: ruflet_stuido
+  organization: com.example
+  version: 1.0.0+1
+  description: A new Ruflet app.
+  # Required for server-driven builds: `ruflet build ios`, `apk`, `web`, etc. without `--self`.
+  # Example: https://api.example.com
+  backend_url: ""
+
+# Source of truth for Flutter client extensions/plugins.
+# Examples: camera, video, audio, flashlight, webview, map
+services: []
+
+# Build assets configuration consumed by `ruflet build`.
+# Paths are relative to this file unless absolute.
+assets:
+  dir: assets
+  splash_screen: assets/splash.png
+  icon_launcher: assets/icon.png
+
+build:
+  splash_color: "#FFFFFF"
+  splash_dark_color: "#0B0B0B"
+  icon_background: "#FFFFFF"
+  theme_color: "#FFFFFF"

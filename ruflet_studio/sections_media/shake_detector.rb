@@ -1,0 +1,45 @@
+# frozen_string_literal: true
+
+module RufletStudio
+  module SectionsMedia
+    def build_shake_detector(page, _status)
+      shake_count = 0
+      state_text = text(value: "Waiting for shake...")
+
+      page.shake_detector(
+        minimum_shake_count: 1,
+        shake_count_reset_time_ms: 3_000,
+        shake_slop_time_ms: 500,
+        shake_threshold_gravity: 2.7,
+        on_shake: lambda { |_event|
+          shake_count += 1
+          page.update(state_text, value: "Shake count: #{shake_count}")
+        }
+      )
+
+      control(
+        :safe_area,
+        content: column(
+          horizontal_alignment: Ruflet::CrossAxisAlignment::CENTER,
+          spacing: 8,
+          children: [
+            state_text,
+            row(
+              alignment: Ruflet::MainAxisAlignment::CENTER,
+              spacing: 8,
+              children: [
+                button(
+                  content: "Reset",
+                  on_click: lambda { |_e|
+                    shake_count = 0
+                    page.update(state_text, value: "Waiting for shake...")
+                  }
+                )
+              ]
+            )
+          ]
+        )
+      )
+    end
+  end
+end
