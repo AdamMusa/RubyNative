@@ -959,6 +959,7 @@ class RufletCliUpdateCommandTest < Minitest::Test
       FileUtils.mkdir_p(File.join(client_dir, "web"))
       FileUtils.mkdir_p(File.join(client_dir, "windows", "runner"))
       FileUtils.mkdir_p(File.join(client_dir, "linux"))
+      FileUtils.mkdir_p(File.join(client_dir, "lib"))
 
       File.write(
         File.join(client_dir, "pubspec.yaml"),
@@ -1049,6 +1050,28 @@ class RufletCliUpdateCommandTest < Minitest::Test
           set(APPLICATION_ID "com.example.ruflet_client")
         CMAKE
       )
+      File.write(
+        File.join(client_dir, "lib", "main.server.dart"),
+        <<~DART
+          return FletApp(
+            title: 'Ruflet',
+          );
+        DART
+      )
+      File.write(
+        File.join(client_dir, "lib", "main.self.dart"),
+        <<~DART
+          return MaterialApp(
+            home: Scaffold(
+              appBar: AppBar(title: const Text('Ruflet')),
+            ),
+          );
+
+          return FletApp(
+            title: 'Ruflet',
+          );
+        DART
+      )
 
       builder.send(
         :sync_client_metadata,
@@ -1105,6 +1128,13 @@ class RufletCliUpdateCommandTest < Minitest::Test
       linux_cmake = File.read(File.join(client_dir, "linux", "CMakeLists.txt"))
       assert_includes linux_cmake, 'set(BINARY_NAME "test_app")'
       assert_includes linux_cmake, 'set(APPLICATION_ID "com.acme.test_app")'
+
+      server_dart = File.read(File.join(client_dir, "lib", "main.server.dart"))
+      assert_includes server_dart, "title: 'Test App'"
+
+      self_dart = File.read(File.join(client_dir, "lib", "main.self.dart"))
+      assert_includes self_dart, "title: 'Test App'"
+      assert_includes self_dart, "AppBar(title: const Text('Test App'))"
     end
   end
 

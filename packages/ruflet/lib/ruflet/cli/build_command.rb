@@ -692,6 +692,7 @@ module Ruflet
         apply_web_metadata(client_dir, metadata)
         apply_windows_metadata(client_dir, metadata)
         apply_linux_metadata(client_dir, metadata)
+        apply_dart_metadata(client_dir, metadata)
         build_log(
           verbose,
           "app=#{metadata[:display_name]} package=#{metadata[:package_name]} org=#{metadata[:organization]} bundle=#{metadata[:bundle_identifier]}"
@@ -889,6 +890,14 @@ module Ruflet
         replace_in_file(cmake_path, /^set\(APPLICATION_ID ".*"\)$/, %(set(APPLICATION_ID "#{metadata[:linux_application_id]}")))
       end
 
+      def apply_dart_metadata(client_dir, metadata)
+        title = dart_single_quote_escape(metadata[:display_name])
+        client_entrypoint_paths(client_dir).each do |entrypoint|
+          replace_in_file(entrypoint, /title: 'Ruflet'/, "title: '#{title}'")
+          replace_in_file(entrypoint, /AppBar\(title: const Text\('Ruflet'\)\)/, "AppBar(title: const Text('#{title}'))")
+        end
+      end
+
       def replace_plist_value(path, key, value)
         return unless File.file?(path)
 
@@ -969,6 +978,10 @@ module Ruflet
 
       def windows_string_escape(value)
         value.to_s.gsub('"', '""')
+      end
+
+      def dart_single_quote_escape(value)
+        value.to_s.gsub("\\", "\\\\\\").gsub("'", "\\\\'")
       end
 
       def key_defined?(hash, key)
