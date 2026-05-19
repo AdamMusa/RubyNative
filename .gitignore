@@ -4,6 +4,20 @@ vendor/*
 .bundle/
 .vscode/
 
+# Flutter template generated output
+templates/ruflet_flutter_template/.dart_tool/
+templates/ruflet_flutter_template/.flutter-plugins-dependencies
+templates/ruflet_flutter_template/build/
+templates/ruflet_flutter_template/pubspec.lock
+templates/ruflet_flutter_template/android/.gradle/
+templates/ruflet_flutter_template/android/.kotlin/
+templates/ruflet_flutter_template/android/local.properties
+templates/ruflet_flutter_template/ios/.symlinks/
+templates/ruflet_flutter_template/ios/Pods/
+templates/ruflet_flutter_template/ios/Podfile.lock
+templates/ruflet_flutter_template/macos/Pods/
+templates/ruflet_flutter_template/macos/Podfile.lock
+
 # Third-party dependencies for ruby_runtime
 ruby_runtime/third_party/
 
