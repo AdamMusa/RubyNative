@@ -28,7 +28,6 @@ module RufletStudio
           on_pan_start: ->(e) {
             pos = extract_pos(e)
             last_point = pos
-            page.update(status, value: "Canvas pan start: #{fmt_pos(e)}")
           },
           on_pan_update: ->(e) {
             pos = extract_pos(e)
@@ -37,7 +36,6 @@ module RufletStudio
               page.update(drawing_canvas, shapes: demo_shapes + strokes)
             end
             last_point = pos
-            page.update(status, value: "Canvas pan update: #{fmt_pos(e)}")
           },
           on_pan_end: ->(_e) { last_point = nil },
           drag_interval: 10
