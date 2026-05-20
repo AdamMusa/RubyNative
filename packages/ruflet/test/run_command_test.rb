@@ -44,6 +44,32 @@ class RufletCliRunCommandTest < Minitest::Test
     refute runner.send(:release_asset_matches?, "ruflet_client-macos.tar.gz", :desktop, "macos")
   end
 
+  def test_prebuilt_macos_desktop_presence_repairs_missing_file_picker_entitlement
+    runner = DummyRunner.new
+
+    Dir.mktmpdir do |dir|
+      app_dir = File.join(dir, "desktop", "ruflet_client.app")
+      bin = File.join(app_dir, "Contents", "MacOS", "ruflet_client")
+      FileUtils.mkdir_p(File.dirname(bin))
+      File.write(bin, "#!/bin/sh\n")
+      FileUtils.chmod("+x", bin)
+
+      checks = [false, true]
+      calls = []
+      runner.define_singleton_method(:host_platform_name) { "macos" }
+      runner.define_singleton_method(:macos_app_has_file_picker_entitlement?) { |_path| checks.shift }
+      runner.define_singleton_method(:system) do |*args, **_kwargs|
+        calls << args
+        true
+      end
+
+      assert runner.send(:prebuilt_desktop_present?, dir, platform: "macos")
+      assert_equal "/usr/bin/codesign", calls.first[0]
+      assert_includes calls.first, "--entitlements"
+      assert_includes calls.first, app_dir
+    end
+  end
+
   def test_build_runtime_command_without_gemfile_runs_script_directly
     runner = DummyRunner.new
     env = {}

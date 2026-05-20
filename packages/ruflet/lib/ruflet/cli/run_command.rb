@@ -315,12 +315,15 @@ module Ruflet
 
         host_os = RbConfig::CONFIG["host_os"]
         if host_os.match?(/darwin/i)
-          release_bin = File.join(root, "build", "macos", "Build", "Products", "Release", "ruflet_client.app", "Contents", "MacOS", "ruflet_client")
-          debug_bin = File.join(root, "build", "macos", "Build", "Products", "Debug", "ruflet_client.app", "Contents", "MacOS", "ruflet_client")
-          prebuilt_bin = File.join(root, "desktop", "ruflet_client.app", "Contents", "MacOS", "ruflet_client")
-          executable = [release_bin, debug_bin].find { |p| File.file?(p) && File.executable?(p) }
-          executable ||= prebuilt_bin if File.file?(prebuilt_bin) && File.executable?(prebuilt_bin)
-          return [executable, url] if executable
+          app_path = [
+            File.join(root, "build", "macos", "Build", "Products", "Release", "ruflet_client.app"),
+            File.join(root, "build", "macos", "Build", "Products", "Debug", "ruflet_client.app"),
+            File.join(root, "desktop", "ruflet_client.app")
+          ].find do |candidate|
+            bin = File.join(candidate, "Contents", "MacOS", "ruflet_client")
+            File.file?(bin) && File.executable?(bin) && ensure_macos_file_picker_entitlement(candidate)
+          end
+          return [File.join(app_path, "Contents", "MacOS", "ruflet_client"), url] if app_path
         elsif host_os.match?(/mswin|mingw|cygwin/i)
           exe = File.join(root, "build", "windows", "x64", "runner", "Release", "ruflet_client.exe")
           prebuilt = File.join(root, "desktop", "ruflet_client.exe")
@@ -436,7 +439,9 @@ module Ruflet
 
         case platform
         when "macos"
-          File.file?(File.join(root, "desktop", "ruflet_client.app", "Contents", "MacOS", "ruflet_client"))
+          app_path = File.join(root, "desktop", "ruflet_client.app")
+          bin = File.join(app_path, "Contents", "MacOS", "ruflet_client")
+          File.file?(bin) && ensure_macos_file_picker_entitlement(app_path)
         when "linux"
           File.file?(File.join(root, "desktop", "ruflet_client"))
         when "windows"
@@ -490,6 +495,53 @@ module Ruflet
         github_get_json("https://api.github.com/repos/AdamMusa/Ruflet/releases/tags/#{tag}")
       rescue StandardError
         nil
+      end
+
+      def ensure_macos_file_picker_entitlement(app_path)
+        return true if macos_app_has_file_picker_entitlement?(app_path)
+
+        Dir.mktmpdir("ruflet-entitlements-") do |dir|
+          entitlements_path = File.join(dir, "ruflet_file_picker.entitlements")
+          File.write(entitlements_path, macos_file_picker_entitlements_plist)
+          system(
+            "/usr/bin/codesign",
+            "--force",
+            "--deep",
+            "--sign",
+            "-",
+            "--entitlements",
+            entitlements_path,
+            app_path,
+            out: File::NULL,
+            err: File::NULL
+          )
+        end
+
+        macos_app_has_file_picker_entitlement?(app_path)
+      end
+
+      def macos_app_has_file_picker_entitlement?(app_path)
+        output = IO.popen(["/usr/bin/codesign", "-d", "--entitlements", ":-", app_path], err: [:child, :out], &:read)
+        $?.success? && output.include?("com.apple.security.files.user-selected.read-write")
+      rescue StandardError
+        false
+      end
+
+      def macos_file_picker_entitlements_plist
+        <<~PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+          \t<key>com.apple.security.app-sandbox</key>
+          \t<true/>
+          \t<key>com.apple.security.files.user-selected.read-write</key>
+          \t<true/>
+          \t<key>com.apple.security.network.client</key>
+          \t<true/>
+          </dict>
+          </plist>
+        PLIST
       end
 
       def fallback_release_asset(assets, wanted)
