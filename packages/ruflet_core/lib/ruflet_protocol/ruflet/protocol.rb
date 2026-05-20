@@ -9,6 +9,7 @@ module Ruflet
       update_control: 4,
       invoke_control_method: 5,
       session_crashed: 6,
+      python_output: 7,
 
       # Legacy JSON protocol aliases kept for compatibility.
       register_web_client: "registerWebClient",
@@ -19,7 +20,13 @@ module Ruflet
     module_function
 
     def pack_message(action:, payload:)
-      [action, payload]
+      [action_code(action), payload]
+    end
+
+    def action_code(action)
+      return action if action.is_a?(Integer) || action.is_a?(String)
+
+      ACTIONS.fetch(action)
     end
 
     def normalize_register_payload(payload)
@@ -51,11 +58,50 @@ module Ruflet
       }
     end
 
-    def register_response(session_id:)
+    def normalize_patch_control_payload(payload)
+      {
+        "id" => payload["id"] || payload[:id],
+        "patch" => Array(payload["patch"] || payload[:patch])
+      }
+    end
+
+    def normalize_invoke_method_payload(payload)
+      {
+        "control_id" => payload["control_id"] || payload[:control_id],
+        "call_id" => payload["call_id"] || payload[:call_id],
+        "name" => payload["name"] || payload[:name],
+        "args" => payload.key?("args") ? payload["args"] : payload[:args],
+        "timeout" => payload.key?("timeout") || payload.key?(:timeout) ? (payload["timeout"] || payload[:timeout]) : 10
+      }
+    end
+
+    def normalize_invoke_method_result_payload(payload)
+      {
+        "control_id" => payload["control_id"] || payload[:control_id],
+        "call_id" => payload["call_id"] || payload[:call_id],
+        "result" => payload.key?("result") ? payload["result"] : payload[:result],
+        "error" => payload.key?("error") ? payload["error"] : payload[:error]
+      }
+    end
+
+    def normalize_session_crashed_payload(payload)
+      {
+        "message" => payload["message"] || payload[:message].to_s
+      }
+    end
+
+    def normalize_python_output_payload(payload)
+      {
+        "text" => payload["text"] || payload[:text].to_s,
+        "is_stderr" => payload.key?("is_stderr") || payload.key?(:is_stderr) ? !!(payload["is_stderr"] || payload[:is_stderr]) : false
+      }
+    end
+
+    def register_response(session_id:, page_patch: {}, error: nil)
       {
         "session_id" => session_id,
-        "page_patch" => {},
-        "error" => nil
+        "page_patch" => page_patch,
+        "error" => error
       }
     end
   end

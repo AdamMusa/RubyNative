@@ -50,7 +50,7 @@ module Ruflet
           when Ruflet::Protocol::ACTIONS[:update_control], Ruflet::Protocol::ACTIONS[:update_control_props]
             on_update_control(ws, payload)
           when Ruflet::Protocol::ACTIONS[:invoke_control_method]
-            nil
+            on_invoke_control_method(ws, payload)
           else
             raise "Unknown action: #{action.inspect}"
           end
@@ -142,6 +142,11 @@ module Ruflet
           return if update["id"].nil?
 
           page.apply_client_update(update["id"], update["props"] || {})
+        end
+
+        def on_invoke_control_method(ws, payload)
+          page = fetch_page(ws)
+          page.handle_invoke_method_result(Ruflet::Protocol.normalize_invoke_method_result_payload(payload))
         end
 
         def fetch_page(ws)

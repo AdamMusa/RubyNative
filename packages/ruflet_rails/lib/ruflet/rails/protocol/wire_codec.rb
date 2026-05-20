@@ -197,8 +197,17 @@ module Ruflet
           end
 
           def read_ext(reader, size)
-            reader.read_i8
-            reader.read_exact(size)
+            type = reader.read_i8
+            data = reader.read_exact(size)
+
+            case type
+            when 1, 2, 4
+              data.dup.force_encoding("UTF-8")
+            when 3
+              data.to_i
+            else
+              data
+            end
           end
         end
 

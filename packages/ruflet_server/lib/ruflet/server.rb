@@ -480,7 +480,7 @@ module Ruflet
 
     def on_invoke_control_method(ws, payload)
       page = fetch_page(ws)
-      page.handle_invoke_method_result(payload)
+      page.handle_invoke_method_result(Protocol.normalize_invoke_method_result_payload(payload))
     end
 
     def on_control_event(ws, payload)
