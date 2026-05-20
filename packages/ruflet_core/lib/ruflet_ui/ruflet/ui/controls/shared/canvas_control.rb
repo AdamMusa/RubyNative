@@ -50,6 +50,20 @@ module Ruflet
             props[:on_size_change] = on_size_change unless on_size_change.nil?
             super(type: TYPE, id: id, **props)
           end
+
+          def capture(pixel_ratio: nil, timeout: 10, on_result: nil)
+            args = {}
+            args["pixel_ratio"] = pixel_ratio unless pixel_ratio.nil?
+            runtime_page&.invoke(self, "capture", args: args.empty? ? nil : args, timeout: timeout, on_result: on_result)
+          end
+
+          def get_capture(timeout: 10, on_result: nil)
+            runtime_page&.invoke(self, "get_capture", timeout: timeout, on_result: on_result)
+          end
+
+          def clear_capture(timeout: 10, on_result: nil)
+            runtime_page&.invoke(self, "clear_capture", timeout: timeout, on_result: on_result)
+          end
         end
       end
     end

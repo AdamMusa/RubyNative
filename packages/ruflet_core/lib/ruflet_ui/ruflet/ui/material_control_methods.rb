@@ -84,6 +84,33 @@ module Ruflet
       def keyboardlistener(content = nil, **props) = keyboard_listener(content, **props)
       def gesture_detector(**props, &block) = build_widget(:gesturedetector, **props, &block)
       def gesturedetector(**props, &block) = gesture_detector(**props, &block)
+      def canvas(shapes = nil, **props)
+        mapped = props.dup
+        mapped[:shapes] = shapes unless shapes.nil?
+        build_widget(:canvas, **mapped)
+      end
+      def line(**props) = build_widget(:line, **props)
+      def circle(**props) = build_widget(:circle, **props)
+      def arc(**props) = build_widget(:arc, **props)
+      def color(**props) = build_widget(:color, **props)
+      def canvas_color(**props) = color(**props)
+      def fill(**props) = build_widget(:fill, **props)
+      def oval(**props) = build_widget(:oval, **props)
+      def points(**props) = build_widget(:points, **props)
+      def rect(**props) = build_widget(:rect, **props)
+      def path(**props) = build_widget(:path, **props)
+      def shadow(**props) = build_widget(:shadow, **props)
+      def paint(**props) = drawing_payload(props)
+      def path_move_to(x = nil, y = nil, **props) = path_point_payload("MoveTo", x, y, props)
+      def path_line_to(x = nil, y = nil, **props) = path_point_payload("LineTo", x, y, props)
+      def path_arc(**props) = drawing_payload(props.merge(_type: "Arc"))
+      def path_arc_to(**props) = drawing_payload(props.merge(_type: "ArcTo"))
+      def path_oval(**props) = drawing_payload(props.merge(_type: "Oval"))
+      def path_rect(**props) = drawing_payload(props.merge(_type: "Rect"))
+      def path_quadratic_to(**props) = drawing_payload(props.merge(_type: "QuadraticTo"))
+      def path_cubic_to(**props) = drawing_payload(props.merge(_type: "CubicTo"))
+      def path_sub_path(**props) = drawing_payload(props.merge(_type: "SubPath"))
+      def path_close(**props) = drawing_payload(props.merge(_type: "Close"))
       def draggable(content = nil, **props, &block)
         mapped = props.dup
         mapped[:content] = content unless content.nil?
@@ -536,6 +563,19 @@ module Ruflet
       end
 
       private
+
+      def drawing_payload(props)
+        props.each_with_object({}) do |(key, value), output|
+          output[key] = value unless value.nil?
+        end
+      end
+
+      def path_point_payload(type, x, y, props)
+        mapped = props.dup
+        mapped[:x] = x unless x.nil?
+        mapped[:y] = y unless y.nil?
+        drawing_payload(mapped.merge(_type: type))
+      end
 
       def normalize_fab_props(props, content)
         mapped = props.dup
