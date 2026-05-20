@@ -421,6 +421,46 @@ module Ruflet
       @view_props["floating_action_button"] = value
     end
 
+    def drawer
+      @view_props["drawer"]
+    end
+
+    def drawer=(value)
+      @view_props["drawer"] = value
+    end
+
+    def end_drawer
+      @view_props["end_drawer"]
+    end
+
+    def end_drawer=(value)
+      @view_props["end_drawer"] = value
+    end
+
+    def show_drawer(timeout: 10, on_result: nil)
+      raise ArgumentError, "show_drawer requires drawer" unless drawer
+
+      invoke_current_view("show_drawer", timeout: timeout, on_result: on_result)
+      self
+    end
+
+    def close_drawer(timeout: 10, on_result: nil)
+      invoke_current_view("close_drawer", timeout: timeout, on_result: on_result)
+      self
+    end
+
+    def show_end_drawer(timeout: 10, on_result: nil)
+      raise ArgumentError, "show_end_drawer requires end_drawer" unless end_drawer
+
+      invoke_current_view("show_end_drawer", timeout: timeout, on_result: on_result)
+      self
+    end
+
+    def close_end_drawer(timeout: 10, on_result: nil)
+      invoke_current_view("close_end_drawer", timeout: timeout, on_result: on_result)
+      self
+    end
+
     def dialog = @dialog
 
     def dialog=(value)
@@ -1489,6 +1529,38 @@ module Ruflet
     def invoke_haptic_feedback(method_name, timeout:, on_result:)
       haptic_feedback = ensure_haptic_feedback_service
       invoke(haptic_feedback, method_name, timeout: timeout, on_result: on_result)
+    end
+
+    def invoke_current_view(method_name, timeout:, on_result:)
+      target_id = @views.last&.wire_id || @view_id
+      invoke_control_id(target_id, method_name, timeout: timeout, on_result: on_result)
+    end
+
+    def invoke_control_id(control_id, method_name, args: nil, timeout: 10, on_result: nil)
+      call_id = "call_#{Ruflet::Control.generate_id}"
+      if on_result.respond_to?(:call)
+        @invoke_waiters_mutex.synchronize { @invoke_callbacks[call_id] = on_result }
+        unless timeout.nil?
+          Thread.new(call_id, timeout.to_f) do |pending_call_id, invoke_timeout|
+            sleep([invoke_timeout, 0.0].max + 0.1)
+            callback = @invoke_waiters_mutex.synchronize { @invoke_callbacks.delete(pending_call_id) }
+            callback&.call(nil, "execution expired")
+          rescue StandardError => e
+            Kernel.warn("invoke timeout callback error: #{e.class}: #{e.message}")
+          end
+        end
+      end
+
+      payload = {
+        "control_id" => control_id,
+        "call_id" => call_id,
+        "name" => method_name.to_s,
+        "args" => args
+      }
+      payload["timeout"] = timeout unless timeout.nil?
+      send_message(Protocol::ACTIONS[:invoke_control_method], payload)
+
+      call_id
     end
 
     def ensure_connectivity_service

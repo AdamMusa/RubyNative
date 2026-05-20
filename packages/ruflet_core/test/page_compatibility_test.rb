@@ -58,6 +58,68 @@ class RufletPageCompatibilityTest < Minitest::Test
     assert_equal [[Ruflet::Event, "/store"]], routes
   end
 
+  def test_page_drawer_and_end_drawer_serialize_on_root_view_like_flet
+    sent = []
+    page = Ruflet::Page.new(
+      session_id: "s1",
+      client_details: { "route" => "/" },
+      sender: ->(action, payload) { sent << [action, payload] }
+    )
+    drawer = Ruflet.navigation_drawer([
+      Ruflet.navigation_drawer_destination(icon: "home", label: "Home")
+    ])
+    end_drawer = Ruflet.navigation_drawer([
+      Ruflet.navigation_drawer_destination(icon: "search", label: "Search")
+    ])
+
+    page.drawer = drawer
+    page.end_drawer = end_drawer
+    page.add(Ruflet.text("body"))
+
+    view = patch_value(sent.last[1]["patch"], "views").first
+    assert_equal drawer, page.drawer
+    assert_equal end_drawer, page.end_drawer
+    assert_equal "NavigationDrawer", view["drawer"]["_c"]
+    assert_equal "NavigationDrawer", view["end_drawer"]["_c"]
+  end
+
+  def test_page_drawer_methods_invoke_current_view_like_flet
+    sent = []
+    page = Ruflet::Page.new(
+      session_id: "s1",
+      client_details: { "route" => "/" },
+      sender: ->(action, payload) { sent << [action, payload] }
+    )
+
+    page.drawer = Ruflet.navigation_drawer([
+      Ruflet.navigation_drawer_destination(icon: "home", label: "Home")
+    ])
+    page.end_drawer = Ruflet.navigation_drawer([
+      Ruflet.navigation_drawer_destination(icon: "search", label: "Search")
+    ])
+    page.add(Ruflet.text("body"))
+
+    page.show_drawer
+    page.close_drawer
+    page.show_end_drawer
+    page.close_end_drawer
+
+    invoke_messages = sent.select { |action, _payload| action == Ruflet::Protocol::ACTIONS[:invoke_control_method] }
+    assert_equal %w[show_drawer close_drawer show_end_drawer close_end_drawer], invoke_messages.map { |_action, payload| payload["name"] }
+    assert_equal [20, 20, 20, 20], invoke_messages.map { |_action, payload| payload["control_id"] }
+  end
+
+  def test_page_show_drawer_requires_drawer_like_flet
+    page = Ruflet::Page.new(
+      session_id: "s1",
+      client_details: { "route" => "/" },
+      sender: ->(_action, _payload) {}
+    )
+
+    assert_raises(ArgumentError) { page.show_drawer }
+    assert_raises(ArgumentError) { page.show_end_drawer }
+  end
+
   private
 
   def patch_value(patch, key)
