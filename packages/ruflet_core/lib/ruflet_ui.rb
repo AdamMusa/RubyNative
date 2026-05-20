@@ -5,6 +5,7 @@ require_relative "ruflet_ui/ruflet/colors"
 require_relative "ruflet_ui/ruflet/icon_data"
 require_relative "ruflet_ui/ruflet/icons/material/material_icons"
 require_relative "ruflet_ui/ruflet/icons/cupertino/cupertino_icons"
+require_relative "ruflet_ui/ruflet/types/animation"
 require_relative "ruflet_ui/ruflet/types/text_style"
 require_relative "ruflet_ui/ruflet/types/geometry"
 require_relative "ruflet_ui/ruflet/control"
@@ -26,6 +27,9 @@ module Ruflet
   TextDecorationStyle = UI::Types::TextDecorationStyle
   Offset = UI::Types::Offset
   Duration = UI::Types::Duration
+  Animation = UI::Types::Animation
+  AnimationStyle = UI::Types::AnimationStyle
+  AnimationCurve = UI::Types::AnimationCurve
 
   module MainAxisAlignment
     CENTER = "center"

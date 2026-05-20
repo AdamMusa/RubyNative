@@ -56,6 +56,11 @@ module Ruflet
         build_widget(:animatedswitcher, **mapped)
       end
       def animatedswitcher(content = nil, **props) = animated_switcher(content, **props)
+      def animation(duration = nil, **props)
+        duration = props.delete(:duration) if duration.nil? && props.key?(:duration)
+        Ruflet::Animation.new(duration: duration, **props)
+      end
+      def animation_style(**props) = Ruflet::AnimationStyle.new(**props)
       def audio(**props) = build_widget(:audio, **props)
       def auto_complete(suggestions = nil, **props)
         mapped = props.dup

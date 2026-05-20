@@ -16,6 +16,8 @@ module Ruflet
       def container(**props, &block) = control_delegate.container(**props, &block)
       def animated_switcher(content = nil, **props) = control_delegate.animated_switcher(content, **props)
       def animatedswitcher(content = nil, **props) = control_delegate.animatedswitcher(content, **props)
+      def animation(duration = nil, **props) = control_delegate.animation(duration, **props)
+      def animation_style(**props) = control_delegate.animation_style(**props)
       def audio(**props) = control_delegate.audio(**props)
       def auto_complete(suggestions = nil, **props) = control_delegate.auto_complete(suggestions, **props)
       def autocomplete(suggestions = nil, **props) = control_delegate.autocomplete(suggestions, **props)

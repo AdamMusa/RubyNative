@@ -51,12 +51,14 @@ module RufletStudio
       height = (max_y + 2) * (size + gap)
 
       scattered = true
+      motion = animation(duration, curve: Ruflet::AnimationCurve::EASE_IN_OUT_CUBIC)
+      bounce = animation(duration, curve: Ruflet::AnimationCurve::BOUNCE_OUT)
 
       parts_controls = parts.map do |_x, _y, _color|
         container(
-          animate: duration,
-          animate_position: duration,
-          animate_rotation: duration,
+          animate: motion,
+          animate_position: motion,
+          animate_rotation: bounce,
           left: rand(width),
           top: rand(height),
           bgcolor: all_colors.sample,
@@ -70,8 +72,8 @@ module RufletStudio
       canvas = stack(
         width: width,
         height: height,
-        animate_scale: duration,
-        animate_opacity: duration,
+        animate_scale: bounce,
+        animate_opacity: motion,
         scale: 5,
         opacity: 0.3
       )
