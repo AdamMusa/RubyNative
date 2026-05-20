@@ -3,6 +3,8 @@
 module RufletStudio
   module SectionsMedia
     def build_magnetometer(page, _status)
+      return mobile_only_notice(page, "Magnetometer") unless mobile_platform?(page)
+
       reading_text = text(value: "Waiting for magnetometer reading...")
       error_text = text(value: "")
 

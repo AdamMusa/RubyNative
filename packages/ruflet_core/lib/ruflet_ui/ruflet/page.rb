@@ -1289,7 +1289,7 @@ module Ruflet
       handler = @page_event_handlers[name.to_s.sub(/\Aon_/, "")]
       return unless handler.respond_to?(:call)
 
-      event = Event.new(name: name.to_s, target: 1, raw_data: data, page: self, control: nil)
+      event = Ruflet::Event.new(name: name.to_s, target: 1, raw_data: data, page: self, control: nil)
       handler.call(event)
     end
 

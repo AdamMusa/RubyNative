@@ -1107,7 +1107,9 @@ module Ruflet
           "lib/main.server.dart",
           "lib/connection_probe.dart",
           "lib/connection_probe_io.dart",
-          "lib/connection_probe_stub.dart"
+          "lib/connection_probe_stub.dart",
+          "macos/Runner/DebugProfile.entitlements",
+          "macos/Runner/Release.entitlements"
         ]
 
         managed_files.each do |relative_path|
@@ -1161,11 +1163,98 @@ module Ruflet
 
           destination = File.join(destination_root, relative_path)
           FileUtils.mkdir_p(File.dirname(destination))
-          FileUtils.cp(source.to_s, destination)
+          copy_project_asset_file(source.to_s, destination, project_root: project_root.to_s)
           copied += 1
         end
 
         build_log(verbose, "copied #{copied} project file#{copied == 1 ? '' : 's'} to assets/#{self_contained_project_name}")
+      end
+
+      def copy_project_asset_file(source, destination, project_root: nil)
+        if File.extname(source).downcase == ".rb"
+          ruby_source =
+            if File.basename(source) == "main.rb" && project_root
+              bundled_embedded_ruby_source(source, project_root)
+            else
+              File.read(source)
+            end
+          File.write(destination, normalize_embedded_ruby_source(ruby_source))
+        else
+          FileUtils.cp(source, destination)
+        end
+      end
+
+      def bundled_embedded_ruby_source(source, project_root, visited = {})
+        absolute = File.expand_path(source)
+        return "" if visited[absolute]
+
+        visited[absolute] = true
+        base = File.dirname(absolute)
+        File.read(absolute).lines.map do |line|
+          match = line.match(/^\s*require_relative\s+["']([^"']+)["']\s*$/)
+          next line unless match
+
+          required = File.expand_path(match[1], base)
+          required = "#{required}.rb" unless File.file?(required)
+          next line unless File.file?(required) && required.start_with?(File.expand_path(project_root))
+
+          bundled_embedded_ruby_source(required, project_root, visited)
+        end.join
+      end
+
+      def normalize_embedded_ruby_source(source)
+        source.lines.map do |line|
+          expand_endless_method_line(line)
+        end.join
+      end
+
+      def expand_endless_method_line(line)
+        match = line.match(/^(\s*)def\s+(.+)$/)
+        return line unless match
+
+        indent = match[1]
+        body = match[2].chomp
+        newline = line.end_with?("\n") ? "\n" : ""
+        split = endless_method_split(body)
+        return line unless split
+
+        signature, expression = split
+        "#{indent}def #{signature.rstrip}\n#{indent}  #{expression.lstrip}\n#{indent}end#{newline}"
+      end
+
+      def endless_method_split(body)
+        depth = 0
+        quote = nil
+        escape = false
+
+        body.each_char.with_index do |char, index|
+          if quote
+            escape = char == "\\" && !escape
+            if char == quote && !escape
+              quote = nil
+            elsif char != "\\"
+              escape = false
+            end
+            next
+          end
+
+          case char
+          when "'", '"'
+            quote = char
+          when "(", "[", "{"
+            depth += 1
+          when ")", "]", "}"
+            depth -= 1 if depth.positive?
+          when "="
+            next unless depth.zero? && body[index + 1] == " "
+
+            signature = body[0...index]
+            expression = body[(index + 1)..]
+            return [signature, expression] unless signature.strip.empty? || expression.to_s.strip.empty?
+          end
+        end
+
+        nil
       end
 
       def remove_self_contained_project_assets(client_dir, verbose: false)

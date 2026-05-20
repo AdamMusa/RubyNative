@@ -3,11 +3,12 @@
 module RufletStudio
   module SectionsMedia
     def build_flashlight(page, status)
+      return mobile_only_notice(page, "Flashlight") unless mobile_platform?(page)
+
       flashlight = page.service(
         :flashlight,
         on_error: ->(e) { page.update(status, value: "Flashlight error: #{e.data}") }
       )
-      platform = page.client_details&.dig("platform") || page.client_details&.dig(:platform)
 
       column(
         spacing: 8,
@@ -17,20 +18,12 @@ module RufletStudio
             spacing: 8,
             children: [
               text_button(content: text(value: "On"), on_click: ->(_e) {
-                if platform == "ios" || platform == "android"
-                  page.invoke(flashlight, "on")
-                  page.update(status, value: "Flashlight on")
-                else
-                  page.update(status, value: "Flashlight requires a real device.")
-                end
+                page.invoke(flashlight, "on")
+                page.update(status, value: "Flashlight on")
               }),
               text_button(content: text(value: "Off"), on_click: ->(_e) {
-                if platform == "ios" || platform == "android"
-                  page.invoke(flashlight, "off")
-                  page.update(status, value: "Flashlight off")
-                else
-                  page.update(status, value: "Flashlight requires a real device.")
-                end
+                page.invoke(flashlight, "off")
+                page.update(status, value: "Flashlight off")
               })
             ]
           )

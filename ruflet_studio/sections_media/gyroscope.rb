@@ -3,6 +3,8 @@
 module RufletStudio
   module SectionsMedia
     def build_gyroscope(page, _status)
+      return mobile_only_notice(page, "Gyroscope") unless mobile_platform?(page)
+
       reading_text = text(value: "Waiting for gyroscope reading...")
       error_text = text(value: "")
 

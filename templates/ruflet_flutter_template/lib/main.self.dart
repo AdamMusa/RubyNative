@@ -280,13 +280,6 @@ class EmbeddedRufletRuntime {
 
     try {
       await RubyRuntime.initialize();
-      await RubyRuntime.eval(
-        "ENV['RUFLET_DEBUG'] ||= '1'; ENV['RUFLET_STRICT_PORT'] = '1'; 'embedded runtime configured'",
-      );
-      final digestLength = await RubyRuntime.eval(
-        "require 'digest/sha1'; Digest::SHA1.digest('abc').bytesize.to_s",
-      );
-      debugPrint('Embedded Digest::SHA1 bytesize: $digestLength');
       final serverPath = await _prepareProjectFiles(workDir);
       await RubyRuntime.startFileServer(serverPath, stopSignalPath: stopPath);
       final startupDeadline = DateTime.now().add(const Duration(seconds: 5));

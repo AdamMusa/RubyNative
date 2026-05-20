@@ -51,6 +51,28 @@ module RufletStudio
       brightness == "dark" ? "dark" : "light"
     end
 
+    def client_platform(page)
+      (page.client_details&.dig("platform") || page.client_details&.dig(:platform)).to_s
+    end
+
+    def mobile_platform?(page)
+      %w[ios android].include?(client_platform(page))
+    end
+
+    def mobile_only_notice(page, feature)
+      control(
+        :safe_area,
+        content: column(
+          horizontal_alignment: Ruflet::CrossAxisAlignment::CENTER,
+          spacing: 8,
+          children: [
+            text(value: "#{feature} is available on iOS and Android devices."),
+            text(value: "Current platform: #{client_platform(page).empty? ? "unknown" : client_platform(page)}", style: { size: 12 })
+          ]
+        )
+      )
+    end
+
     def set_theme(page, mode)
       normalized = mode.to_s.strip.downcase
       return unless %w[system light dark].include?(normalized)

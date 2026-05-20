@@ -3,6 +3,8 @@
 module RufletStudio
   module SectionsMedia
     def build_accelerometer(page, _status)
+      return mobile_only_notice(page, "Accelerometer") unless mobile_platform?(page)
+
       reading_text = text(value: "Waiting for accelerometer reading...")
       error_text = text(value: "")
 

@@ -3,6 +3,8 @@
 module RufletStudio
   module SectionsMedia
     def build_camera(page, status)
+      return mobile_only_notice(page, "Camera") unless mobile_platform?(page)
+
       camera = page.camera(
         preview_enabled: true,
         on_error: ->(e) { page.update(status, value: "Camera error: #{e.data}") }

@@ -50,12 +50,12 @@ class RufletPageCompatibilityTest < Minitest::Test
     )
 
     routes = []
-    page.on_route_change = ->(event) { routes << event.value }
+    page.on_route_change = ->(event) { routes << [event.class, event.value] }
 
     page.dispatch_event(target: 1, name: "route_change", data: { "route" => "/store" })
 
     assert_equal "/store", page.route
-    assert_equal ["/store"], routes
+    assert_equal [[Ruflet::Event, "/store"]], routes
   end
 
   private

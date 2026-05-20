@@ -3,6 +3,8 @@
 module RufletStudio
   module SectionsMedia
     def build_shake_detector(page, _status)
+      return mobile_only_notice(page, "Shake detector") unless mobile_platform?(page)
+
       shake_count = 0
       state_text = text(value: "Waiting for shake...")
 

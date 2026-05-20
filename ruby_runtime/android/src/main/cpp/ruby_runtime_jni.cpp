@@ -310,6 +310,9 @@ Java_com_izeesoft_ruby_1runtime_MrubyRuntimePlugin_nativeStartFileServer(
     throw_runtime_error(env, g_last_server_error);
     return nullptr;
   }
+  const size_t slash = file_path.find_last_of('/');
+  const std::string app_root = slash == std::string::npos ? "." : file_path.substr(0, slash);
+  source = "$__ruflet_app_root = '" + escape_single_quotes(app_root) + "'\n" + source;
 
   std::thread([file_path, stop_path, source]() {
     setenv("RUFLET_PROD_STOP_FILE", stop_path.c_str(), 1);

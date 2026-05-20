@@ -19,4 +19,82 @@ class RufletCliTemplatesTest < Minitest::Test
   def test_main_template_uses_bootstrapped_app_title
     assert_includes format(Ruflet::CLI::MAIN_TEMPLATE, app_title: "Demo App"), 'page.title = "Demo App"'
   end
+
+  def test_self_contained_template_starts_runtime_without_preflight_eval
+    template = File.read(File.expand_path("../../../templates/ruflet_flutter_template/lib/main.self.dart", __dir__))
+
+    refute_includes template, "RubyRuntime.eval"
+    assert_includes template, "RubyRuntime.startFileServer"
+  end
+
+  def test_macos_template_allows_user_selected_files_for_desktop_file_picker
+    %w[DebugProfile Release].each do |name|
+      entitlements = File.read(File.expand_path("../../../templates/ruflet_flutter_template/macos/Runner/#{name}.entitlements", __dir__))
+
+      assert_includes entitlements, "com.apple.security.files.user-selected.read-write"
+    end
+  end
+
+  def test_embedded_runtime_shims_hash_dig
+    runtime = File.read(File.expand_path("../../../ruby_runtime/shared/embedded_ruflet_runtime.rb", __dir__))
+
+    assert_includes runtime, "class Hash"
+    assert_includes runtime, "def dig(key, *keys)"
+  end
+
+  def test_embedded_runtime_avoids_fiber_backed_each_with_index_enumerator
+    runtime = File.read(File.expand_path("../../../ruby_runtime/shared/embedded_ruflet_runtime.rb", __dir__))
+
+    assert_includes runtime, "class RufletSimpleEnumerator"
+    assert_includes runtime, "def each_with_index"
+    assert_includes runtime, "RufletSimpleEnumerator.new(self)"
+    refute_includes runtime, "@receiver.send"
+  end
+
+  def test_embedded_runtime_exposes_page_service_helpers
+    runtime = File.read(File.expand_path("../../../ruby_runtime/shared/embedded_ruflet_runtime.rb", __dir__))
+
+    %w[
+      shared_preferences wakelock flashlight screen_brightness audio
+      accelerometer gyroscope user_accelerometer magnetometer barometer
+      shake_detector semantics_service screenshot battery connectivity
+      clipboard file_picker url_launcher storage_paths share camera
+      haptic_feedback
+    ].each do |helper|
+      assert_includes runtime, "def #{helper}(**props)", "missing page.#{helper}"
+      assert_includes runtime, "service(:#{helper}, **props)"
+    end
+  end
+
+  def test_embedded_runtime_matches_service_helper_signatures
+    runtime = File.read(File.expand_path("../../../ruby_runtime/shared/embedded_ruflet_runtime.rb", __dir__))
+
+    assert_includes runtime, "def share_text(\n      text = nil,"
+    assert_includes runtime, "def share_uri(\n      uri = nil,"
+    assert_includes runtime, "def share_files(\n      files = nil,"
+    assert_includes runtime, "def compact_service_args(hash)"
+    assert_includes runtime, "def normalize_share_file(file)"
+    assert_includes runtime, "compact_service_args(\n          \"dialog_title\" => dialog_title"
+  end
+
+  def test_embedded_file_picker_uses_persistent_page_service
+    runtime = File.read(File.expand_path("../../../ruby_runtime/shared/embedded_ruflet_runtime.rb", __dir__))
+
+    assert_includes runtime, "picker = service(:file_picker)"
+    refute_includes runtime, "picker = build_widget(:file_picker)"
+  end
+
+  def test_embedded_runtime_has_sleep_shim_for_threaded_samples
+    runtime = File.read(File.expand_path("../../../ruby_runtime/shared/embedded_ruflet_runtime.rb", __dir__))
+
+    assert_includes runtime, "def sleep(_seconds = nil)"
+  end
+
+  def test_embedded_runtime_does_not_start_timeout_thread_with_fake_thread
+    runtime = File.read(File.expand_path("../../../ruby_runtime/shared/embedded_ruflet_runtime.rb", __dir__))
+
+    assert_includes runtime, "RUFLET_EMBEDDED_FAKE_THREAD = true"
+    assert_includes runtime, "def embedded_async_timeout_available?"
+    assert_includes runtime, "if embedded_async_timeout_available? && !timeout.nil?"
+  end
 end

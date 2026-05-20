@@ -306,6 +306,8 @@ static void request_stop_server(void) {
       result([FlutterError errorWithCode:@"mruby_error" message:message details:nil]);
       return;
     }
+    NSString *safeAppRoot = escape_single_quotes([path stringByDeletingLastPathComponent]);
+    source = [NSString stringWithFormat:@"$__ruflet_app_root = '%@'\n%@", safeAppRoot, source];
 
     g_last_server_error = nil;
     g_server_running = YES;

@@ -3,7 +3,40 @@
 static const char* kEmbeddedRufletRuntime = R"RUFLET_RUNTIME(
 # RUFLET_RUNTIME_ZIP_V1
 # RUFLET_MRUBY_REFLECTION_SHIM
+class RufletSimpleEnumerator
+  def initialize(receiver)
+    @receiver = receiver
+  end
+
+  def each(&block)
+    @receiver.each_with_index(&block)
+  end
+
+  def map
+    values = []
+    each { |*items| values << yield(*items) }
+    values
+  end
+
+  def to_a
+    values = []
+    each { |*items| values << (items.length == 1 ? items[0] : items) }
+    values
+  end
+end
+
 class Array
+  def each_with_index
+    return RufletSimpleEnumerator.new(self) unless block_given?
+
+    index = 0
+    each do |value|
+      yield(value, index)
+      index += 1
+    end
+    self
+  end
+
   unless method_defined?(:each_with_object)
     def each_with_object(object)
       each { |item| yield(item, object) }
@@ -43,6 +76,17 @@ class Array
 end
 
 class Hash
+  unless method_defined?(:dig)
+    def dig(key, *keys)
+      value = self[key]
+      return value if keys.empty?
+      return nil if value.nil?
+      return value.dig(*keys) if value.respond_to?(:dig)
+
+      raise TypeError, "#{value.class} does not have #dig method"
+    end
+  end
+
   unless method_defined?(:fetch)
     def fetch(key, *args)
       if args.length > 1
@@ -136,6 +180,14 @@ module Kernel
     def warn(message = nil)
       puts(message) if message
     end
+  end
+
+  unless method_defined?(:sleep)
+    def sleep(_seconds = nil)
+      0
+    end
+
+    private :sleep
   end
 end
 
@@ -870,8 +922,20 @@ module Kernel
   end
 
   unless method_defined?(:require_relative)
-    def require_relative(_feature)
-      true
+    def require_relative(feature)
+      return true if [
+        "icons/material_icon_lookup",
+        "icons/cupertino_icon_lookup",
+        "ui/control_factory",
+        "ui/controls/ruflet_controls",
+        "ui/control_registry",
+        "material_control_registry",
+        "cupertino_control_registry",
+        "controls/ruflet_controls",
+        "services/ruflet_services"
+      ].include?(feature.to_s)
+
+      raise NotImplementedError, "dynamic require_relative is not available in embedded mruby; run ruflet build --self so Ruflet can bundle static require_relative files"
     end
   end
 
@@ -884,8 +948,20 @@ end
 
 class Module
   unless method_defined?(:require_relative)
-    def require_relative(_feature)
-      true
+    def require_relative(feature)
+      return true if [
+        "icons/material_icon_lookup",
+        "icons/cupertino_icon_lookup",
+        "ui/control_factory",
+        "ui/controls/ruflet_controls",
+        "ui/control_registry",
+        "material_control_registry",
+        "cupertino_control_registry",
+        "controls/ruflet_controls",
+        "services/ruflet_services"
+      ].include?(feature.to_s)
+
+      raise NotImplementedError, "dynamic require_relative is not available in embedded mruby; run ruflet build --self so Ruflet can bundle static require_relative files"
     end
   end
 
@@ -931,6 +1007,8 @@ unless Object.const_defined?(:Interrupt)
 end
 
 unless Object.const_defined?(:Thread)
+  RUFLET_EMBEDDED_FAKE_THREAD = true unless Object.const_defined?(:RUFLET_EMBEDDED_FAKE_THREAD)
+
   class Thread
     def self.new(*args, &block)
       block.call(*args) if block
@@ -18485,8 +18563,12 @@ module Ruflet
   module UI
     module MaterialControlMethods
       EMBEDDED_INSTANCE_METHODS = ["view", "column", "center", "row", "stack", "grid_view", "gridview", "container", "gesture_detector", "gesturedetector", "draggable", "drag_target", "dragtarget", "text", "button", "elevated_button", "text_button", "textbutton", "filled_button", "filledbutton", "icon_button", "iconbutton", "text_field", "textfield", "checkbox", "radio", "radio_group", "radiogroup", "alert_dialog", "alertdialog", "snack_bar", "snackbar", "bottom_sheet", "bottomsheet", "markdown", "icon", "image", "app_bar", "appbar", "url_launcher", "clipboard", "floating_action_button", "floatingactionbutton", "tabs", "tab", "tab_bar", "tabbar", "tab_bar_view", "tabbarview", "navigation_bar", "navigationbar", "navigation_bar_destination", "navigationbardestination", "bar_chart", "barchart", "bar_chart_group", "barchartgroup", "bar_chart_rod", "barchartrod", "bar_chart_rod_stack_item", "barchartrodstackitem", "line_chart", "linechart", "line_chart_data", "linechartdata", "line_chart_data_point", "linechartdatapoint", "pie_chart", "piechart", "pie_chart_section", "piechartsection", "candlestick_chart", "candlestickchart", "candlestick_chart_spot", "candlestickchartspot", "radar_chart", "radarchart", "radar_chart_title", "radarcharttitle", "radar_data_set", "radardataset", "radar_data_set_entry", "radardatasetentry", "scatter_chart", "scatterchart", "scatter_chart_spot", "scatterchartspot", "chart_axis", "chartaxis", "chart_axis_label", "chartaxislabel", "web_view", "webview", "fab", "normalize_fab_props", "blank_fab_content?", "normalize_image_source", "normalize_container_props"].freeze
-      def view(**props, &block) = build_widget(:view, **props, &block)
-      def column(**props, &block) = build_widget(:column, **props, &block)
+      def view(**props, &block)
+        build_widget(:view, **props, &block)
+      end
+      def column(**props, &block)
+        build_widget(:column, **props, &block)
+      end
 
       def center(**props, &block)
         mapped = props.dup
@@ -18507,16 +18589,36 @@ module Ruflet
         build_widget(:container, **normalize_container_props(defaults.merge(mapped)))
       end
 
-      def row(**props, &block) = build_widget(:row, **props, &block)
-      def stack(**props, &block) = build_widget(:stack, **props, &block)
-      def grid_view(**props, &block) = build_widget(:gridview, **props, &block)
-      def gridview(**props, &block) = grid_view(**props, &block)
-      def container(**props, &block) = build_widget(:container, **normalize_container_props(props), &block)
-      def gesture_detector(**props, &block) = build_widget(:gesturedetector, **props, &block)
-      def gesturedetector(**props, &block) = gesture_detector(**props, &block)
-      def draggable(**props, &block) = build_widget(:draggable, **props, &block)
-      def drag_target(**props, &block) = build_widget(:dragtarget, **props, &block)
-      def dragtarget(**props, &block) = drag_target(**props, &block)
+      def row(**props, &block)
+        build_widget(:row, **props, &block)
+      end
+      def stack(**props, &block)
+        build_widget(:stack, **props, &block)
+      end
+      def grid_view(**props, &block)
+        build_widget(:gridview, **props, &block)
+      end
+      def gridview(**props, &block)
+        grid_view(**props, &block)
+      end
+      def container(**props, &block)
+        build_widget(:container, **normalize_container_props(props), &block)
+      end
+      def gesture_detector(**props, &block)
+        build_widget(:gesturedetector, **props, &block)
+      end
+      def gesturedetector(**props, &block)
+        gesture_detector(**props, &block)
+      end
+      def draggable(**props, &block)
+        build_widget(:draggable, **props, &block)
+      end
+      def drag_target(**props, &block)
+        build_widget(:dragtarget, **props, &block)
+      end
+      def dragtarget(**props, &block)
+        drag_target(**props, &block)
+      end
 
       def text(value = nil, **props)
         mapped = props.dup
@@ -18524,29 +18626,69 @@ module Ruflet
         build_widget(:text, **mapped)
       end
 
-      def button(**props) = build_widget(:button, **props)
+      def button(**props)
+        build_widget(:button, **props)
+      end
       # Ruflet currently uses a single Material button control schema.
       # Keep elevated_button DSL available by routing to :button.
-      def elevated_button(**props) = build_widget(:button, **props)
-      def text_button(**props) = build_widget(:textbutton, **props)
-      def textbutton(**props) = text_button(**props)
-      def filled_button(**props) = build_widget(:filledbutton, **props)
-      def filledbutton(**props) = filled_button(**props)
+      def elevated_button(**props)
+        build_widget(:button, **props)
+      end
+      def text_button(**props)
+        build_widget(:textbutton, **props)
+      end
+      def textbutton(**props)
+        text_button(**props)
+      end
+      def filled_button(**props)
+        build_widget(:filledbutton, **props)
+      end
+      def filledbutton(**props)
+        filled_button(**props)
+      end
 
-      def icon_button(**props) = build_widget(:iconbutton, **props)
-      def iconbutton(**props) = icon_button(**props)
-      def text_field(**props) = build_widget(:textfield, **props)
-      def textfield(**props) = text_field(**props)
-      def checkbox(**props) = build_widget(:checkbox, **props)
-      def radio(**props) = build_widget(:radio, **props)
-      def radio_group(**props) = build_widget(:radiogroup, **props)
-      def radiogroup(**props) = radio_group(**props)
-      def alert_dialog(**props) = build_widget(:alertdialog, **props)
-      def alertdialog(**props) = alert_dialog(**props)
-      def snack_bar(**props) = build_widget(:snackbar, **props)
-      def snackbar(**props) = snack_bar(**props)
-      def bottom_sheet(**props) = build_widget(:bottomsheet, **props)
-      def bottomsheet(**props) = bottom_sheet(**props)
+      def icon_button(**props)
+        build_widget(:iconbutton, **props)
+      end
+      def iconbutton(**props)
+        icon_button(**props)
+      end
+      def text_field(**props)
+        build_widget(:textfield, **props)
+      end
+      def textfield(**props)
+        text_field(**props)
+      end
+      def checkbox(**props)
+        build_widget(:checkbox, **props)
+      end
+      def radio(**props)
+        build_widget(:radio, **props)
+      end
+      def radio_group(**props)
+        build_widget(:radiogroup, **props)
+      end
+      def radiogroup(**props)
+        radio_group(**props)
+      end
+      def alert_dialog(**props)
+        build_widget(:alertdialog, **props)
+      end
+      def alertdialog(**props)
+        alert_dialog(**props)
+      end
+      def snack_bar(**props)
+        build_widget(:snackbar, **props)
+      end
+      def snackbar(**props)
+        snack_bar(**props)
+      end
+      def bottom_sheet(**props)
+        build_widget(:bottomsheet, **props)
+      end
+      def bottomsheet(**props)
+        bottom_sheet(**props)
+      end
 
       def markdown(value = nil, **props)
         mapped = props.dup
@@ -18554,7 +18696,9 @@ module Ruflet
         build_widget(:markdown, **mapped)
       end
 
-      def icon(**props) = build_widget(:icon, **props)
+      def icon(**props)
+        build_widget(:icon, **props)
+      end
 
       def image(src = nil, src_base64: nil, placeholder_src: nil, **props)
         mapped = props.dup
@@ -18564,62 +18708,174 @@ module Ruflet
         build_widget(:image, **mapped)
       end
 
-      def app_bar(**props) = build_widget(:appbar, **props)
-      def appbar(**props) = app_bar(**props)
-      def url_launcher(**props) = build_widget(:url_launcher, **props)
-      def clipboard(**props) = build_widget(:clipboard, **props)
-      def floating_action_button(**props) = build_widget(:floatingactionbutton, **props)
-      def floatingactionbutton(**props) = floating_action_button(**props)
-      def tabs(**props, &block) = build_widget(:tabs, **props, &block)
-      def tab(**props, &block) = build_widget(:tab, **props, &block)
-      def tab_bar(**props, &block) = build_widget(:tabbar, **props, &block)
-      def tabbar(**props, &block) = tab_bar(**props, &block)
-      def tab_bar_view(**props, &block) = build_widget(:tabbarview, **props, &block)
-      def tabbarview(**props, &block) = tab_bar_view(**props, &block)
-      def navigation_bar(**props, &block) = build_widget(:navigationbar, **props, &block)
-      def navigationbar(**props, &block) = navigation_bar(**props, &block)
-      def navigation_bar_destination(**props, &block) = build_widget(:navigationbardestination, **props, &block)
-      def navigationbardestination(**props, &block) = navigation_bar_destination(**props, &block)
-      def bar_chart(**props) = build_widget(:barchart, **props)
-      def barchart(**props) = bar_chart(**props)
-      def bar_chart_group(**props) = build_widget(:barchartgroup, **props)
-      def barchartgroup(**props) = bar_chart_group(**props)
-      def bar_chart_rod(**props) = build_widget(:barchartrod, **props)
-      def barchartrod(**props) = bar_chart_rod(**props)
-      def bar_chart_rod_stack_item(**props) = build_widget(:barchartrodstackitem, **props)
-      def barchartrodstackitem(**props) = bar_chart_rod_stack_item(**props)
-      def line_chart(**props) = build_widget(:linechart, **props)
-      def linechart(**props) = line_chart(**props)
-      def line_chart_data(**props) = build_widget(:linechartdata, **props)
-      def linechartdata(**props) = line_chart_data(**props)
-      def line_chart_data_point(**props) = build_widget(:linechartdatapoint, **props)
-      def linechartdatapoint(**props) = line_chart_data_point(**props)
-      def pie_chart(**props) = build_widget(:piechart, **props)
-      def piechart(**props) = pie_chart(**props)
-      def pie_chart_section(**props) = build_widget(:piechartsection, **props)
-      def piechartsection(**props) = pie_chart_section(**props)
-      def candlestick_chart(**props) = build_widget(:candlestickchart, **props)
-      def candlestickchart(**props) = candlestick_chart(**props)
-      def candlestick_chart_spot(**props) = build_widget(:candlestickchartspot, **props)
-      def candlestickchartspot(**props) = candlestick_chart_spot(**props)
-      def radar_chart(**props) = build_widget(:radarchart, **props)
-      def radarchart(**props) = radar_chart(**props)
-      def radar_chart_title(**props) = build_widget(:radarcharttitle, **props)
-      def radarcharttitle(**props) = radar_chart_title(**props)
-      def radar_data_set(**props) = build_widget(:radardataset, **props)
-      def radardataset(**props) = radar_data_set(**props)
-      def radar_data_set_entry(**props) = build_widget(:radardatasetentry, **props)
-      def radardatasetentry(**props) = radar_data_set_entry(**props)
-      def scatter_chart(**props) = build_widget(:scatterchart, **props)
-      def scatterchart(**props) = scatter_chart(**props)
-      def scatter_chart_spot(**props) = build_widget(:scatterchartspot, **props)
-      def scatterchartspot(**props) = scatter_chart_spot(**props)
-      def chart_axis(**props) = build_widget(:chartaxis, **props)
-      def chartaxis(**props) = chart_axis(**props)
-      def chart_axis_label(**props) = build_widget(:chartaxislabel, **props)
-      def chartaxislabel(**props) = chart_axis_label(**props)
-      def web_view(**props) = build_widget(:webview, **props)
-      def webview(**props) = web_view(**props)
+      def app_bar(**props)
+        build_widget(:appbar, **props)
+      end
+      def appbar(**props)
+        app_bar(**props)
+      end
+      def url_launcher(**props)
+        build_widget(:url_launcher, **props)
+      end
+      def clipboard(**props)
+        build_widget(:clipboard, **props)
+      end
+      def floating_action_button(**props)
+        build_widget(:floatingactionbutton, **props)
+      end
+      def floatingactionbutton(**props)
+        floating_action_button(**props)
+      end
+      def tabs(**props, &block)
+        build_widget(:tabs, **props, &block)
+      end
+      def tab(**props, &block)
+        build_widget(:tab, **props, &block)
+      end
+      def tab_bar(**props, &block)
+        build_widget(:tabbar, **props, &block)
+      end
+      def tabbar(**props, &block)
+        tab_bar(**props, &block)
+      end
+      def tab_bar_view(**props, &block)
+        build_widget(:tabbarview, **props, &block)
+      end
+      def tabbarview(**props, &block)
+        tab_bar_view(**props, &block)
+      end
+      def navigation_bar(**props, &block)
+        build_widget(:navigationbar, **props, &block)
+      end
+      def navigationbar(**props, &block)
+        navigation_bar(**props, &block)
+      end
+      def navigation_bar_destination(**props, &block)
+        build_widget(:navigationbardestination, **props, &block)
+      end
+      def navigationbardestination(**props, &block)
+        navigation_bar_destination(**props, &block)
+      end
+      def bar_chart(**props)
+        build_widget(:barchart, **props)
+      end
+      def barchart(**props)
+        bar_chart(**props)
+      end
+      def bar_chart_group(**props)
+        build_widget(:barchartgroup, **props)
+      end
+      def barchartgroup(**props)
+        bar_chart_group(**props)
+      end
+      def bar_chart_rod(**props)
+        build_widget(:barchartrod, **props)
+      end
+      def barchartrod(**props)
+        bar_chart_rod(**props)
+      end
+      def bar_chart_rod_stack_item(**props)
+        build_widget(:barchartrodstackitem, **props)
+      end
+      def barchartrodstackitem(**props)
+        bar_chart_rod_stack_item(**props)
+      end
+      def line_chart(**props)
+        build_widget(:linechart, **props)
+      end
+      def linechart(**props)
+        line_chart(**props)
+      end
+      def line_chart_data(**props)
+        build_widget(:linechartdata, **props)
+      end
+      def linechartdata(**props)
+        line_chart_data(**props)
+      end
+      def line_chart_data_point(**props)
+        build_widget(:linechartdatapoint, **props)
+      end
+      def linechartdatapoint(**props)
+        line_chart_data_point(**props)
+      end
+      def pie_chart(**props)
+        build_widget(:piechart, **props)
+      end
+      def piechart(**props)
+        pie_chart(**props)
+      end
+      def pie_chart_section(**props)
+        build_widget(:piechartsection, **props)
+      end
+      def piechartsection(**props)
+        pie_chart_section(**props)
+      end
+      def candlestick_chart(**props)
+        build_widget(:candlestickchart, **props)
+      end
+      def candlestickchart(**props)
+        candlestick_chart(**props)
+      end
+      def candlestick_chart_spot(**props)
+        build_widget(:candlestickchartspot, **props)
+      end
+      def candlestickchartspot(**props)
+        candlestick_chart_spot(**props)
+      end
+      def radar_chart(**props)
+        build_widget(:radarchart, **props)
+      end
+      def radarchart(**props)
+        radar_chart(**props)
+      end
+      def radar_chart_title(**props)
+        build_widget(:radarcharttitle, **props)
+      end
+      def radarcharttitle(**props)
+        radar_chart_title(**props)
+      end
+      def radar_data_set(**props)
+        build_widget(:radardataset, **props)
+      end
+      def radardataset(**props)
+        radar_data_set(**props)
+      end
+      def radar_data_set_entry(**props)
+        build_widget(:radardatasetentry, **props)
+      end
+      def radardatasetentry(**props)
+        radar_data_set_entry(**props)
+      end
+      def scatter_chart(**props)
+        build_widget(:scatterchart, **props)
+      end
+      def scatterchart(**props)
+        scatter_chart(**props)
+      end
+      def scatter_chart_spot(**props)
+        build_widget(:scatterchartspot, **props)
+      end
+      def scatterchartspot(**props)
+        scatter_chart_spot(**props)
+      end
+      def chart_axis(**props)
+        build_widget(:chartaxis, **props)
+      end
+      def chartaxis(**props)
+        chart_axis(**props)
+      end
+      def chart_axis_label(**props)
+        build_widget(:chartaxislabel, **props)
+      end
+      def chartaxislabel(**props)
+        chart_axis_label(**props)
+      end
+      def web_view(**props)
+        build_widget(:webview, **props)
+      end
+      def webview(**props)
+        web_view(**props)
+      end
 
       def fab(content = nil, **props)
         mapped = normalize_fab_props(props.dup, content)
@@ -18700,24 +18956,60 @@ module Ruflet
   module UI
     module CupertinoControlMethods
       EMBEDDED_INSTANCE_METHODS = ["cupertino_button", "cupertinobutton", "cupertino_filled_button", "cupertinofilledbutton", "cupertino_text_field", "cupertinotextfield", "cupertino_switch", "cupertinoswitch", "cupertino_slider", "cupertinoslider", "cupertino_alert_dialog", "cupertinoalertdialog", "cupertino_action_sheet", "cupertinoactionsheet", "cupertino_dialog_action", "cupertinodialogaction", "cupertino_navigation_bar", "cupertinonavigationbar"].freeze
-      def cupertino_button(**props) = build_widget(:cupertino_button, **props)
-      def cupertinobutton(**props) = cupertino_button(**props)
-      def cupertino_filled_button(**props) = build_widget(:cupertino_filled_button, **props)
-      def cupertinofilledbutton(**props) = cupertino_filled_button(**props)
-      def cupertino_text_field(**props) = build_widget(:cupertino_text_field, **props)
-      def cupertinotextfield(**props) = cupertino_text_field(**props)
-      def cupertino_switch(**props) = build_widget(:cupertino_switch, **props)
-      def cupertinoswitch(**props) = cupertino_switch(**props)
-      def cupertino_slider(**props) = build_widget(:cupertino_slider, **props)
-      def cupertinoslider(**props) = cupertino_slider(**props)
-      def cupertino_alert_dialog(**props) = build_widget(:cupertino_alert_dialog, **props)
-      def cupertinoalertdialog(**props) = cupertino_alert_dialog(**props)
-      def cupertino_action_sheet(**props) = build_widget(:cupertino_action_sheet, **props)
-      def cupertinoactionsheet(**props) = cupertino_action_sheet(**props)
-      def cupertino_dialog_action(**props) = build_widget(:cupertino_dialog_action, **props)
-      def cupertinodialogaction(**props) = cupertino_dialog_action(**props)
-      def cupertino_navigation_bar(**props) = build_widget(:cupertino_navigation_bar, **props)
-      def cupertinonavigationbar(**props) = cupertino_navigation_bar(**props)
+      def cupertino_button(**props)
+        build_widget(:cupertino_button, **props)
+      end
+      def cupertinobutton(**props)
+        cupertino_button(**props)
+      end
+      def cupertino_filled_button(**props)
+        build_widget(:cupertino_filled_button, **props)
+      end
+      def cupertinofilledbutton(**props)
+        cupertino_filled_button(**props)
+      end
+      def cupertino_text_field(**props)
+        build_widget(:cupertino_text_field, **props)
+      end
+      def cupertinotextfield(**props)
+        cupertino_text_field(**props)
+      end
+      def cupertino_switch(**props)
+        build_widget(:cupertino_switch, **props)
+      end
+      def cupertinoswitch(**props)
+        cupertino_switch(**props)
+      end
+      def cupertino_slider(**props)
+        build_widget(:cupertino_slider, **props)
+      end
+      def cupertinoslider(**props)
+        cupertino_slider(**props)
+      end
+      def cupertino_alert_dialog(**props)
+        build_widget(:cupertino_alert_dialog, **props)
+      end
+      def cupertinoalertdialog(**props)
+        cupertino_alert_dialog(**props)
+      end
+      def cupertino_action_sheet(**props)
+        build_widget(:cupertino_action_sheet, **props)
+      end
+      def cupertinoactionsheet(**props)
+        cupertino_action_sheet(**props)
+      end
+      def cupertino_dialog_action(**props)
+        build_widget(:cupertino_dialog_action, **props)
+      end
+      def cupertinodialogaction(**props)
+        cupertino_dialog_action(**props)
+      end
+      def cupertino_navigation_bar(**props)
+        build_widget(:cupertino_navigation_bar, **props)
+      end
+      def cupertinonavigationbar(**props)
+        cupertino_navigation_bar(**props)
+      end
     end
   end
 end
@@ -18732,9 +19024,15 @@ module Ruflet
       include MaterialControlMethods
       include CupertinoControlMethods
 
-      def control(type, **props, &block) = build_widget(type, **props, &block)
-      def widget(type, **props, &block) = build_widget(type, **props, &block)
-      def service(type, **props, &block) = build_service(type, **props, &block)
+      def control(type, **props, &block)
+        build_widget(type, **props, &block)
+      end
+      def widget(type, **props, &block)
+        build_widget(type, **props, &block)
+      end
+      def service(type, **props, &block)
+        build_service(type, **props, &block)
+      end
     end
   end
 end
@@ -18842,7 +19140,9 @@ module Ruflet
       node
     end
 
-    def build_widget(type, **props, &block) = control(type, **props, &block)
+    def build_widget(type, **props, &block)
+      control(type, **props, &block)
+    end
     def build_service(type, **props, &block)
       mapped_props = props.dup
       node = UI::ControlFactory.build(type, **mapped_props)
@@ -18867,121 +19167,351 @@ module Ruflet
   module UI
     module SharedControlForwarders
       EMBEDDED_INSTANCE_METHODS = ["control", "widget", "service", "view", "column", "center", "row", "stack", "grid_view", "gridview", "container", "gesture_detector", "gesturedetector", "draggable", "drag_target", "dragtarget", "text", "button", "elevated_button", "text_button", "textbutton", "filled_button", "filledbutton", "icon_button", "iconbutton", "text_field", "textfield", "checkbox", "radio", "radio_group", "radiogroup", "alert_dialog", "alertdialog", "snack_bar", "snackbar", "bottom_sheet", "bottomsheet", "markdown", "icon", "image", "fab", "app_bar", "appbar", "clipboard", "floating_action_button", "floatingactionbutton", "tabs", "tab", "tab_bar", "tabbar", "tab_bar_view", "tabbarview", "navigation_bar", "navigationbar", "navigation_bar_destination", "navigationbardestination", "bar_chart", "barchart", "bar_chart_group", "barchartgroup", "bar_chart_rod", "barchartrod", "bar_chart_rod_stack_item", "barchartrodstackitem", "line_chart", "linechart", "line_chart_data", "linechartdata", "line_chart_data_point", "linechartdatapoint", "pie_chart", "piechart", "pie_chart_section", "piechartsection", "candlestick_chart", "candlestickchart", "candlestick_chart_spot", "candlestickchartspot", "radar_chart", "radarchart", "radar_chart_title", "radarcharttitle", "radar_data_set", "radardataset", "radar_data_set_entry", "radardatasetentry", "scatter_chart", "scatterchart", "scatter_chart_spot", "scatterchartspot", "chart_axis", "chartaxis", "chart_axis_label", "chartaxislabel", "web_view", "webview", "cupertino_button", "cupertinobutton", "cupertino_filled_button", "cupertinofilledbutton", "cupertino_text_field", "cupertinotextfield", "cupertino_switch", "cupertinoswitch", "cupertino_slider", "cupertinoslider", "cupertino_alert_dialog", "cupertinoalertdialog", "cupertino_action_sheet", "cupertinoactionsheet", "cupertino_dialog_action", "cupertinodialogaction", "cupertino_navigation_bar", "cupertinonavigationbar", "duration", "control_delegate"].freeze
-      def control(type, **props, &block) = control_delegate.control(type, **props, &block)
-      def widget(type, **props, &block) = control_delegate.widget(type, **props, &block)
-      def service(type, **props, &block) = control_delegate.service(type, **props, &block)
-      def view(**props, &block) = control_delegate.view(**props, &block)
-      def column(**props, &block) = control_delegate.column(**props, &block)
-      def center(**props, &block) = control_delegate.center(**props, &block)
-      def row(**props, &block) = control_delegate.row(**props, &block)
-      def stack(**props, &block) = control_delegate.stack(**props, &block)
-      def grid_view(**props, &block) = control_delegate.grid_view(**props, &block)
-      def gridview(**props, &block) = control_delegate.gridview(**props, &block)
-      def container(**props, &block) = control_delegate.container(**props, &block)
-      def gesture_detector(**props, &block) = control_delegate.gesture_detector(**props, &block)
-      def gesturedetector(**props, &block) = control_delegate.gesturedetector(**props, &block)
-      def draggable(**props, &block) = control_delegate.draggable(**props, &block)
-      def drag_target(**props, &block) = control_delegate.drag_target(**props, &block)
-      def dragtarget(**props, &block) = control_delegate.dragtarget(**props, &block)
-      def text(value = nil, **props) = control_delegate.text(value, **props)
-      def button(**props) = control_delegate.button(**props)
-      def elevated_button(**props) = control_delegate.elevated_button(**props)
-      def text_button(**props) = control_delegate.text_button(**props)
-      def textbutton(**props) = control_delegate.textbutton(**props)
-      def filled_button(**props) = control_delegate.filled_button(**props)
-      def filledbutton(**props) = control_delegate.filledbutton(**props)
-      def icon_button(**props) = control_delegate.icon_button(**props)
-      def iconbutton(**props) = control_delegate.iconbutton(**props)
-      def text_field(**props) = control_delegate.text_field(**props)
-      def textfield(**props) = control_delegate.textfield(**props)
-      def checkbox(**props) = control_delegate.checkbox(**props)
-      def radio(**props) = control_delegate.radio(**props)
-      def radio_group(**props) = control_delegate.radio_group(**props)
-      def radiogroup(**props) = control_delegate.radiogroup(**props)
-      def alert_dialog(**props) = control_delegate.alert_dialog(**props)
-      def alertdialog(**props) = control_delegate.alertdialog(**props)
-      def snack_bar(**props) = control_delegate.snack_bar(**props)
-      def snackbar(**props) = control_delegate.snackbar(**props)
-      def bottom_sheet(**props) = control_delegate.bottom_sheet(**props)
-      def bottomsheet(**props) = control_delegate.bottomsheet(**props)
-      def markdown(value = nil, **props) = control_delegate.markdown(value, **props)
-      def icon(**props) = control_delegate.icon(**props)
-      def image(src = nil, **props) = control_delegate.image(src, **props)
-      def fab(content = nil, **props) = control_delegate.fab(content, **props)
-      def app_bar(**props) = control_delegate.app_bar(**props)
-      def appbar(**props) = control_delegate.appbar(**props)
-      def clipboard(**props) = control_delegate.clipboard(**props)
-      def floating_action_button(**props) = control_delegate.floating_action_button(**props)
-      def floatingactionbutton(**props) = control_delegate.floatingactionbutton(**props)
-      def tabs(**props, &block) = control_delegate.tabs(**props, &block)
-      def tab(**props, &block) = control_delegate.tab(**props, &block)
-      def tab_bar(**props, &block) = control_delegate.tab_bar(**props, &block)
-      def tabbar(**props, &block) = control_delegate.tabbar(**props, &block)
-      def tab_bar_view(**props, &block) = control_delegate.tab_bar_view(**props, &block)
-      def tabbarview(**props, &block) = control_delegate.tabbarview(**props, &block)
-      def navigation_bar(**props, &block) = control_delegate.navigation_bar(**props, &block)
-      def navigationbar(**props, &block) = control_delegate.navigationbar(**props, &block)
-      def navigation_bar_destination(**props, &block) = control_delegate.navigation_bar_destination(**props, &block)
-      def navigationbardestination(**props, &block) = control_delegate.navigationbardestination(**props, &block)
-      def bar_chart(**props) = control_delegate.bar_chart(**props)
-      def barchart(**props) = control_delegate.barchart(**props)
-      def bar_chart_group(**props) = control_delegate.bar_chart_group(**props)
-      def barchartgroup(**props) = control_delegate.barchartgroup(**props)
-      def bar_chart_rod(**props) = control_delegate.bar_chart_rod(**props)
-      def barchartrod(**props) = control_delegate.barchartrod(**props)
-      def bar_chart_rod_stack_item(**props) = control_delegate.bar_chart_rod_stack_item(**props)
-      def barchartrodstackitem(**props) = control_delegate.barchartrodstackitem(**props)
-      def line_chart(**props) = control_delegate.line_chart(**props)
-      def linechart(**props) = control_delegate.linechart(**props)
-      def line_chart_data(**props) = control_delegate.line_chart_data(**props)
-      def linechartdata(**props) = control_delegate.linechartdata(**props)
-      def line_chart_data_point(**props) = control_delegate.line_chart_data_point(**props)
-      def linechartdatapoint(**props) = control_delegate.linechartdatapoint(**props)
-      def pie_chart(**props) = control_delegate.pie_chart(**props)
-      def piechart(**props) = control_delegate.piechart(**props)
-      def pie_chart_section(**props) = control_delegate.pie_chart_section(**props)
-      def piechartsection(**props) = control_delegate.piechartsection(**props)
-      def candlestick_chart(**props) = control_delegate.candlestick_chart(**props)
-      def candlestickchart(**props) = control_delegate.candlestickchart(**props)
-      def candlestick_chart_spot(**props) = control_delegate.candlestick_chart_spot(**props)
-      def candlestickchartspot(**props) = control_delegate.candlestickchartspot(**props)
-      def radar_chart(**props) = control_delegate.radar_chart(**props)
-      def radarchart(**props) = control_delegate.radarchart(**props)
-      def radar_chart_title(**props) = control_delegate.radar_chart_title(**props)
-      def radarcharttitle(**props) = control_delegate.radarcharttitle(**props)
-      def radar_data_set(**props) = control_delegate.radar_data_set(**props)
-      def radardataset(**props) = control_delegate.radardataset(**props)
-      def radar_data_set_entry(**props) = control_delegate.radar_data_set_entry(**props)
-      def radardatasetentry(**props) = control_delegate.radardatasetentry(**props)
-      def scatter_chart(**props) = control_delegate.scatter_chart(**props)
-      def scatterchart(**props) = control_delegate.scatterchart(**props)
-      def scatter_chart_spot(**props) = control_delegate.scatter_chart_spot(**props)
-      def scatterchartspot(**props) = control_delegate.scatterchartspot(**props)
-      def chart_axis(**props) = control_delegate.chart_axis(**props)
-      def chartaxis(**props) = control_delegate.chartaxis(**props)
-      def chart_axis_label(**props) = control_delegate.chart_axis_label(**props)
-      def chartaxislabel(**props) = control_delegate.chartaxislabel(**props)
-      def web_view(**props) = control_delegate.web_view(**props)
-      def webview(**props) = control_delegate.webview(**props)
-      def cupertino_button(**props) = control_delegate.cupertino_button(**props)
-      def cupertinobutton(**props) = control_delegate.cupertinobutton(**props)
-      def cupertino_filled_button(**props) = control_delegate.cupertino_filled_button(**props)
-      def cupertinofilledbutton(**props) = control_delegate.cupertinofilledbutton(**props)
-      def cupertino_text_field(**props) = control_delegate.cupertino_text_field(**props)
-      def cupertinotextfield(**props) = control_delegate.cupertinotextfield(**props)
-      def cupertino_switch(**props) = control_delegate.cupertino_switch(**props)
-      def cupertinoswitch(**props) = control_delegate.cupertinoswitch(**props)
-      def cupertino_slider(**props) = control_delegate.cupertino_slider(**props)
-      def cupertinoslider(**props) = control_delegate.cupertinoslider(**props)
-      def cupertino_alert_dialog(**props) = control_delegate.cupertino_alert_dialog(**props)
-      def cupertinoalertdialog(**props) = control_delegate.cupertinoalertdialog(**props)
-      def cupertino_action_sheet(**props) = control_delegate.cupertino_action_sheet(**props)
-      def cupertinoactionsheet(**props) = control_delegate.cupertinoactionsheet(**props)
-      def cupertino_dialog_action(**props) = control_delegate.cupertino_dialog_action(**props)
-      def cupertinodialogaction(**props) = control_delegate.cupertinodialogaction(**props)
-      def cupertino_navigation_bar(**props) = control_delegate.cupertino_navigation_bar(**props)
-      def cupertinonavigationbar(**props) = control_delegate.cupertinonavigationbar(**props)
-      def duration(**parts) = control_delegate.duration(**parts)
+      def control(type, **props, &block)
+        control_delegate.control(type, **props, &block)
+      end
+      def widget(type, **props, &block)
+        control_delegate.widget(type, **props, &block)
+      end
+      def service(type, **props, &block)
+        control_delegate.service(type, **props, &block)
+      end
+      def view(**props, &block)
+        control_delegate.view(**props, &block)
+      end
+      def column(**props, &block)
+        control_delegate.column(**props, &block)
+      end
+      def center(**props, &block)
+        control_delegate.center(**props, &block)
+      end
+      def row(**props, &block)
+        control_delegate.row(**props, &block)
+      end
+      def stack(**props, &block)
+        control_delegate.stack(**props, &block)
+      end
+      def grid_view(**props, &block)
+        control_delegate.grid_view(**props, &block)
+      end
+      def gridview(**props, &block)
+        control_delegate.gridview(**props, &block)
+      end
+      def container(**props, &block)
+        control_delegate.container(**props, &block)
+      end
+      def gesture_detector(**props, &block)
+        control_delegate.gesture_detector(**props, &block)
+      end
+      def gesturedetector(**props, &block)
+        control_delegate.gesturedetector(**props, &block)
+      end
+      def draggable(**props, &block)
+        control_delegate.draggable(**props, &block)
+      end
+      def drag_target(**props, &block)
+        control_delegate.drag_target(**props, &block)
+      end
+      def dragtarget(**props, &block)
+        control_delegate.dragtarget(**props, &block)
+      end
+      def text(value = nil, **props)
+        control_delegate.text(value, **props)
+      end
+      def button(**props)
+        control_delegate.button(**props)
+      end
+      def elevated_button(**props)
+        control_delegate.elevated_button(**props)
+      end
+      def text_button(**props)
+        control_delegate.text_button(**props)
+      end
+      def textbutton(**props)
+        control_delegate.textbutton(**props)
+      end
+      def filled_button(**props)
+        control_delegate.filled_button(**props)
+      end
+      def filledbutton(**props)
+        control_delegate.filledbutton(**props)
+      end
+      def icon_button(**props)
+        control_delegate.icon_button(**props)
+      end
+      def iconbutton(**props)
+        control_delegate.iconbutton(**props)
+      end
+      def text_field(**props)
+        control_delegate.text_field(**props)
+      end
+      def textfield(**props)
+        control_delegate.textfield(**props)
+      end
+      def checkbox(**props)
+        control_delegate.checkbox(**props)
+      end
+      def radio(**props)
+        control_delegate.radio(**props)
+      end
+      def radio_group(**props)
+        control_delegate.radio_group(**props)
+      end
+      def radiogroup(**props)
+        control_delegate.radiogroup(**props)
+      end
+      def alert_dialog(**props)
+        control_delegate.alert_dialog(**props)
+      end
+      def alertdialog(**props)
+        control_delegate.alertdialog(**props)
+      end
+      def snack_bar(**props)
+        control_delegate.snack_bar(**props)
+      end
+      def snackbar(**props)
+        control_delegate.snackbar(**props)
+      end
+      def bottom_sheet(**props)
+        control_delegate.bottom_sheet(**props)
+      end
+      def bottomsheet(**props)
+        control_delegate.bottomsheet(**props)
+      end
+      def markdown(value = nil, **props)
+        control_delegate.markdown(value, **props)
+      end
+      def icon(**props)
+        control_delegate.icon(**props)
+      end
+      def image(src = nil, **props)
+        control_delegate.image(src, **props)
+      end
+      def fab(content = nil, **props)
+        control_delegate.fab(content, **props)
+      end
+      def app_bar(**props)
+        control_delegate.app_bar(**props)
+      end
+      def appbar(**props)
+        control_delegate.appbar(**props)
+      end
+      def clipboard(**props)
+        control_delegate.clipboard(**props)
+      end
+      def floating_action_button(**props)
+        control_delegate.floating_action_button(**props)
+      end
+      def floatingactionbutton(**props)
+        control_delegate.floatingactionbutton(**props)
+      end
+      def tabs(**props, &block)
+        control_delegate.tabs(**props, &block)
+      end
+      def tab(**props, &block)
+        control_delegate.tab(**props, &block)
+      end
+      def tab_bar(**props, &block)
+        control_delegate.tab_bar(**props, &block)
+      end
+      def tabbar(**props, &block)
+        control_delegate.tabbar(**props, &block)
+      end
+      def tab_bar_view(**props, &block)
+        control_delegate.tab_bar_view(**props, &block)
+      end
+      def tabbarview(**props, &block)
+        control_delegate.tabbarview(**props, &block)
+      end
+      def navigation_bar(**props, &block)
+        control_delegate.navigation_bar(**props, &block)
+      end
+      def navigationbar(**props, &block)
+        control_delegate.navigationbar(**props, &block)
+      end
+      def navigation_bar_destination(**props, &block)
+        control_delegate.navigation_bar_destination(**props, &block)
+      end
+      def navigationbardestination(**props, &block)
+        control_delegate.navigationbardestination(**props, &block)
+      end
+      def bar_chart(**props)
+        control_delegate.bar_chart(**props)
+      end
+      def barchart(**props)
+        control_delegate.barchart(**props)
+      end
+      def bar_chart_group(**props)
+        control_delegate.bar_chart_group(**props)
+      end
+      def barchartgroup(**props)
+        control_delegate.barchartgroup(**props)
+      end
+      def bar_chart_rod(**props)
+        control_delegate.bar_chart_rod(**props)
+      end
+      def barchartrod(**props)
+        control_delegate.barchartrod(**props)
+      end
+      def bar_chart_rod_stack_item(**props)
+        control_delegate.bar_chart_rod_stack_item(**props)
+      end
+      def barchartrodstackitem(**props)
+        control_delegate.barchartrodstackitem(**props)
+      end
+      def line_chart(**props)
+        control_delegate.line_chart(**props)
+      end
+      def linechart(**props)
+        control_delegate.linechart(**props)
+      end
+      def line_chart_data(**props)
+        control_delegate.line_chart_data(**props)
+      end
+      def linechartdata(**props)
+        control_delegate.linechartdata(**props)
+      end
+      def line_chart_data_point(**props)
+        control_delegate.line_chart_data_point(**props)
+      end
+      def linechartdatapoint(**props)
+        control_delegate.linechartdatapoint(**props)
+      end
+      def pie_chart(**props)
+        control_delegate.pie_chart(**props)
+      end
+      def piechart(**props)
+        control_delegate.piechart(**props)
+      end
+      def pie_chart_section(**props)
+        control_delegate.pie_chart_section(**props)
+      end
+      def piechartsection(**props)
+        control_delegate.piechartsection(**props)
+      end
+      def candlestick_chart(**props)
+        control_delegate.candlestick_chart(**props)
+      end
+      def candlestickchart(**props)
+        control_delegate.candlestickchart(**props)
+      end
+      def candlestick_chart_spot(**props)
+        control_delegate.candlestick_chart_spot(**props)
+      end
+      def candlestickchartspot(**props)
+        control_delegate.candlestickchartspot(**props)
+      end
+      def radar_chart(**props)
+        control_delegate.radar_chart(**props)
+      end
+      def radarchart(**props)
+        control_delegate.radarchart(**props)
+      end
+      def radar_chart_title(**props)
+        control_delegate.radar_chart_title(**props)
+      end
+      def radarcharttitle(**props)
+        control_delegate.radarcharttitle(**props)
+      end
+      def radar_data_set(**props)
+        control_delegate.radar_data_set(**props)
+      end
+      def radardataset(**props)
+        control_delegate.radardataset(**props)
+      end
+      def radar_data_set_entry(**props)
+        control_delegate.radar_data_set_entry(**props)
+      end
+      def radardatasetentry(**props)
+        control_delegate.radardatasetentry(**props)
+      end
+      def scatter_chart(**props)
+        control_delegate.scatter_chart(**props)
+      end
+      def scatterchart(**props)
+        control_delegate.scatterchart(**props)
+      end
+      def scatter_chart_spot(**props)
+        control_delegate.scatter_chart_spot(**props)
+      end
+      def scatterchartspot(**props)
+        control_delegate.scatterchartspot(**props)
+      end
+      def chart_axis(**props)
+        control_delegate.chart_axis(**props)
+      end
+      def chartaxis(**props)
+        control_delegate.chartaxis(**props)
+      end
+      def chart_axis_label(**props)
+        control_delegate.chart_axis_label(**props)
+      end
+      def chartaxislabel(**props)
+        control_delegate.chartaxislabel(**props)
+      end
+      def web_view(**props)
+        control_delegate.web_view(**props)
+      end
+      def webview(**props)
+        control_delegate.webview(**props)
+      end
+      def cupertino_button(**props)
+        control_delegate.cupertino_button(**props)
+      end
+      def cupertinobutton(**props)
+        control_delegate.cupertinobutton(**props)
+      end
+      def cupertino_filled_button(**props)
+        control_delegate.cupertino_filled_button(**props)
+      end
+      def cupertinofilledbutton(**props)
+        control_delegate.cupertinofilledbutton(**props)
+      end
+      def cupertino_text_field(**props)
+        control_delegate.cupertino_text_field(**props)
+      end
+      def cupertinotextfield(**props)
+        control_delegate.cupertinotextfield(**props)
+      end
+      def cupertino_switch(**props)
+        control_delegate.cupertino_switch(**props)
+      end
+      def cupertinoswitch(**props)
+        control_delegate.cupertinoswitch(**props)
+      end
+      def cupertino_slider(**props)
+        control_delegate.cupertino_slider(**props)
+      end
+      def cupertinoslider(**props)
+        control_delegate.cupertinoslider(**props)
+      end
+      def cupertino_alert_dialog(**props)
+        control_delegate.cupertino_alert_dialog(**props)
+      end
+      def cupertinoalertdialog(**props)
+        control_delegate.cupertinoalertdialog(**props)
+      end
+      def cupertino_action_sheet(**props)
+        control_delegate.cupertino_action_sheet(**props)
+      end
+      def cupertinoactionsheet(**props)
+        control_delegate.cupertinoactionsheet(**props)
+      end
+      def cupertino_dialog_action(**props)
+        control_delegate.cupertino_dialog_action(**props)
+      end
+      def cupertinodialogaction(**props)
+        control_delegate.cupertinodialogaction(**props)
+      end
+      def cupertino_navigation_bar(**props)
+        control_delegate.cupertino_navigation_bar(**props)
+      end
+      def cupertinonavigationbar(**props)
+        control_delegate.cupertinonavigationbar(**props)
+      end
+      def duration(**parts)
+        control_delegate.duration(**parts)
+      end
 
       private
 
@@ -19889,6 +20419,102 @@ module Ruflet
       svc
     end
 
+    def shared_preferences(**props)
+      return service(:shared_preferences, **props) unless props.empty?
+
+      @shared_preferences_service ||= SharedPreferencesService.new(self)
+    end
+
+    def wakelock(**props)
+      return service(:wakelock, **props) unless props.empty?
+
+      @wakelock_service ||= WakelockService.new(self)
+    end
+
+    def flashlight(**props)
+      return service(:flashlight, **props) unless props.empty?
+
+      @flashlight_service ||= FlashlightService.new(self)
+    end
+
+    def screen_brightness(**props)
+      return service(:screen_brightness, **props) unless props.empty?
+
+      @screen_brightness_service ||= ScreenBrightnessService.new(self)
+    end
+
+    def audio(**props)
+      service(:audio, **props)
+    end
+
+    def accelerometer(**props)
+      service(:accelerometer, **props)
+    end
+
+    def gyroscope(**props)
+      service(:gyroscope, **props)
+    end
+
+    def user_accelerometer(**props)
+      service(:user_accelerometer, **props)
+    end
+
+    def magnetometer(**props)
+      service(:magnetometer, **props)
+    end
+
+    def barometer(**props)
+      service(:barometer, **props)
+    end
+
+    def shake_detector(**props)
+      service(:shake_detector, **props)
+    end
+
+    def semantics_service(**props)
+      service(:semantics_service, **props)
+    end
+
+    def screenshot(**props)
+      service(:screenshot, **props)
+    end
+
+    def battery(**props)
+      service(:battery, **props)
+    end
+
+    def connectivity(**props)
+      service(:connectivity, **props)
+    end
+
+    def clipboard(**props)
+      service(:clipboard, **props)
+    end
+
+    def file_picker(**props)
+      service(:file_picker, **props)
+    end
+
+    def url_launcher(**props)
+      service(:url_launcher, **props)
+    end
+
+    def storage_paths(**props)
+      service(:storage_paths, **props)
+    end
+
+    def share(**props)
+      service(:share, **props)
+    end
+
+    def camera(**props)
+      service(:camera, **props)
+    end
+
+    def haptic_feedback(**props)
+      service(:haptic_feedback, **props)
+    end
+
     def go(route, **query_params)
       @page_props["route"] = build_route(route, query_params)
       dispatch_page_event(name: "route_change", data: @page_props["route"])
@@ -19923,7 +20549,9 @@ module Ruflet
       @view_props["floating_action_button"] = value
     end
 
-    def dialog = @dialog
+    def dialog
+      @dialog
+    end
 
     def dialog=(value)
       @dialog = value
@@ -19974,7 +20602,7 @@ module Ruflet
       call_id = "call_#{Ruflet::Control.generate_id}"
       if on_result.respond_to?(:call)
         @invoke_waiters_mutex.synchronize { @invoke_callbacks[call_id] = on_result }
-        unless timeout.nil?
+        if embedded_async_timeout_available? && !timeout.nil?
           ::Thread.new(call_id, timeout.to_f) do |pending_call_id, invoke_timeout|
             sleep([invoke_timeout, 0.0].max + 0.1)
             callback = @invoke_waiters_mutex.synchronize { @invoke_callbacks.delete(pending_call_id) }
@@ -19994,6 +20622,10 @@ module Ruflet
       send_message(Protocol::ACTIONS[:invoke_control_method], payload)
 
       call_id
+    end
+
+    def embedded_async_timeout_available?
+      !Object.const_defined?(:RUFLET_EMBEDDED_FAKE_THREAD)
     end
 
     # Synchronous invoke for controls/services that must return a value
@@ -20036,14 +20668,14 @@ module Ruflet
     )
       invoke_file_picker(
         "pick_files",
-        {
+        compact_service_args(
           "dialog_title" => dialog_title,
           "initial_directory" => initial_directory,
           "file_type" => file_type,
           "allowed_extensions" => allowed_extensions,
           "allow_multiple" => allow_multiple,
           "with_data" => with_data
-        },
+        ),
         timeout: timeout,
         on_result: on_result
       )
@@ -20061,14 +20693,14 @@ module Ruflet
     )
       invoke_file_picker(
         "save_file",
-        {
+        compact_service_args(
           "dialog_title" => dialog_title,
           "file_name" => file_name,
           "initial_directory" => initial_directory,
           "file_type" => file_type,
           "allowed_extensions" => allowed_extensions,
           "src_bytes" => src_bytes
-        },
+        ),
         timeout: timeout,
         on_result: on_result
       )
@@ -20077,10 +20709,10 @@ module Ruflet
     def get_directory_path(dialog_title: nil, initial_directory: nil, timeout: nil, on_result: nil)
       invoke_file_picker(
         "get_directory_path",
-        {
+        compact_service_args(
           "dialog_title" => dialog_title,
           "initial_directory" => initial_directory
-        },
+        ),
         timeout: timeout,
         on_result: on_result
       )
@@ -20182,7 +20814,7 @@ module Ruflet
     end
 
     def share_text(
-      text:,
+      text = nil,
       title: nil,
       subject: nil,
       preview_thumbnail: nil,
@@ -20197,7 +20829,7 @@ module Ruflet
       invoke(
         share,
         "share_text",
-        args: {
+        args: compact_service_args(
           "text" => text,
           "title" => title,
           "subject" => subject,
@@ -20206,14 +20838,14 @@ module Ruflet
           "download_fallback_enabled" => download_fallback_enabled,
           "mail_to_fallback_enabled" => mail_to_fallback_enabled,
           "excluded_cupertino_activities" => excluded_cupertino_activities
-        },
+        ),
         timeout: timeout,
         on_result: on_result
       )
     end
 
     def share_uri(
-      uri:,
+      uri = nil,
       share_position_origin: nil,
       excluded_cupertino_activities: nil,
       timeout: nil,
@@ -20223,18 +20855,18 @@ module Ruflet
       invoke(
         share,
         "share_uri",
-        args: {
+        args: compact_service_args(
           "uri" => uri,
           "share_position_origin" => share_position_origin,
           "excluded_cupertino_activities" => excluded_cupertino_activities
-        },
+        ),
         timeout: timeout,
         on_result: on_result
       )
     end
 
     def share_files(
-      files:,
+      files = nil,
       text: nil,
       title: nil,
       subject: nil,
@@ -20250,20 +20882,66 @@ module Ruflet
       invoke(
         share,
         "share_files",
-        args: {
-          "files" => files,
+        args: compact_service_args(
+          "files" => normalize_share_files(files),
           "text" => text,
           "title" => title,
           "subject" => subject,
-          "preview_thumbnail" => preview_thumbnail,
+          "preview_thumbnail" => normalize_share_file(preview_thumbnail),
           "share_position_origin" => share_position_origin,
           "download_fallback_enabled" => download_fallback_enabled,
           "mail_to_fallback_enabled" => mail_to_fallback_enabled,
           "excluded_cupertino_activities" => excluded_cupertino_activities
-        },
+        ),
         timeout: timeout,
         on_result: on_result
       )
+    end
+
+    def compact_service_args(hash)
+      hash.each_with_object({}) do |pair, result|
+        key = pair[0]
+        value = pair[1]
+        result[key] = normalize_service_value(value) unless value.nil?
+      end
+    end
+
+    def normalize_service_value(value)
+      case value
+      when Array
+        value.map { |item| normalize_service_value(item) }
+      when Hash
+        value.each_with_object({}) do |pair, result|
+          key = pair[0].to_s
+          item = pair[1]
+          next if item.nil?
+
+          result[key] = key == "data" && byte_array?(item) ? item.pack("C*").b : normalize_service_value(item)
+        end
+      else
+        value
+      end
+    end
+
+    def normalize_share_files(files)
+      return nil if files.nil?
+
+      Array(files).map { |file| normalize_share_file(file) }
+    end
+
+    def normalize_share_file(file)
+      case file
+      when nil
+        nil
+      when String
+        { "path" => file }
+      else
+        normalize_service_value(file)
+      end
+    end
+
+    def byte_array?(value)
+      value.is_a?(Array) && value.all? { |item| item.is_a?(Integer) && item >= 0 && item <= 255 }
     end
 
     def handle_invoke_method_result(payload)
@@ -20447,7 +21125,9 @@ module Ruflet
       @invoke_waiters_mutex.synchronize { @invoke_waiters.delete(call_id) } if call_id
     end
 
-    def build_widget(type, **props, &block) = WidgetBuilder.new.control(type, **props, &block)
+    def build_widget(type, **props, &block)
+      WidgetBuilder.new.control(type, **props, &block)
+    end
 
     def widget_helper_method?(name)
       WIDGET_HELPER_METHODS.include?(name.to_s)
@@ -20605,7 +21285,7 @@ module Ruflet
       handler = @page_event_handlers[name.to_s.sub(/\Aon_/, "")]
       return unless handler.respond_to?(:call)
 
-      event = Event.new(name: name.to_s, target: 1, raw_data: data, page: self, control: nil)
+      event = Ruflet::Event.new(name: name.to_s, target: 1, raw_data: data, page: self, control: nil)
       handler.call(event)
     end
 
@@ -20901,20 +21581,17 @@ module Ruflet
     end
 
     def invoke_file_picker(method_name, args, timeout:, on_result:)
-      picker = build_widget(:file_picker)
-      add_service(picker)
+      picker = service(:file_picker)
       invoke(
         picker,
         method_name,
         args: args,
         timeout: timeout,
         on_result: lambda { |result, error|
-          remove_service(picker)
           on_result&.call(result, error)
         }
       )
     rescue StandardError => e
-      remove_service(picker) if picker
       on_result&.call(nil, e.message)
     end
   end
@@ -20996,121 +21673,351 @@ module Ruflet
       pending
     end
 
-    def page(**props, &block) = _pending_app.page(**props, &block)
-    def control(type, **props, &block) = _pending_app.control(type, **props, &block)
-    def widget(type, **props, &block) = _pending_app.widget(type, **props, &block)
-    def service(type, **props, &block) = _pending_app.service(type, **props, &block)
-    def column(**props, &block) = _pending_app.column(**props, &block)
-    def center(**props, &block) = _pending_app.center(**props, &block)
-    def row(**props, &block) = _pending_app.row(**props, &block)
-    def stack(**props, &block) = _pending_app.stack(**props, &block)
-    def grid_view(**props, &block) = _pending_app.grid_view(**props, &block)
-    def gridview(**props, &block) = _pending_app.gridview(**props, &block)
-    def container(**props, &block) = _pending_app.container(**props, &block)
-    def gesture_detector(**props, &block) = _pending_app.gesture_detector(**props, &block)
-    def gesturedetector(**props, &block) = _pending_app.gesturedetector(**props, &block)
-    def draggable(**props, &block) = _pending_app.draggable(**props, &block)
-    def drag_target(**props, &block) = _pending_app.drag_target(**props, &block)
-    def dragtarget(**props, &block) = _pending_app.dragtarget(**props, &block)
-    def text(value = nil, **props) = _pending_app.text(value, **props)
-    def button(**props) = _pending_app.button(**props)
-    def elevated_button(**props) = _pending_app.elevated_button(**props)
-    def text_field(**props) = _pending_app.text_field(**props)
-    def textfield(**props) = _pending_app.textfield(**props)
-    def icon(**props) = _pending_app.icon(**props)
-    def image(src = nil, **props) = _pending_app.image(src, **props)
-    def icon_button(**props) = _pending_app.icon_button(**props)
-    def iconbutton(**props) = _pending_app.iconbutton(**props)
-    def app_bar(**props) = _pending_app.app_bar(**props)
-    def appbar(**props) = _pending_app.appbar(**props)
-    def clipboard(**props) = _pending_app.clipboard(**props)
-    def text_button(**props) = _pending_app.text_button(**props)
-    def textbutton(**props) = _pending_app.textbutton(**props)
-    def filled_button(**props) = _pending_app.filled_button(**props)
-    def filledbutton(**props) = _pending_app.filledbutton(**props)
-    def checkbox(**props) = _pending_app.checkbox(**props)
-    def radio(**props) = _pending_app.radio(**props)
-    def radio_group(**props) = _pending_app.radio_group(**props)
-    def radiogroup(**props) = _pending_app.radiogroup(**props)
-    def alert_dialog(**props) = _pending_app.alert_dialog(**props)
-    def alertdialog(**props) = _pending_app.alertdialog(**props)
-    def snack_bar(**props) = _pending_app.snack_bar(**props)
-    def snackbar(**props) = _pending_app.snackbar(**props)
-    def bottom_sheet(**props) = _pending_app.bottom_sheet(**props)
-    def bottomsheet(**props) = _pending_app.bottomsheet(**props)
-    def markdown(value = nil, **props) = _pending_app.markdown(value, **props)
-    def floating_action_button(**props) = _pending_app.floating_action_button(**props)
-    def floatingactionbutton(**props) = _pending_app.floatingactionbutton(**props)
-    def tabs(**props, &block) = _pending_app.tabs(**props, &block)
-    def tab(**props, &block) = _pending_app.tab(**props, &block)
-    def tab_bar(**props, &block) = _pending_app.tab_bar(**props, &block)
-    def tabbar(**props, &block) = _pending_app.tabbar(**props, &block)
-    def tab_bar_view(**props, &block) = _pending_app.tab_bar_view(**props, &block)
-    def tabbarview(**props, &block) = _pending_app.tabbarview(**props, &block)
-    def navigation_bar(**props, &block) = _pending_app.navigation_bar(**props, &block)
-    def navigationbar(**props, &block) = _pending_app.navigationbar(**props, &block)
-    def navigation_bar_destination(**props, &block) = _pending_app.navigation_bar_destination(**props, &block)
-    def navigationbardestination(**props, &block) = _pending_app.navigationbardestination(**props, &block)
-    def bar_chart(**props) = _pending_app.bar_chart(**props)
-    def barchart(**props) = _pending_app.barchart(**props)
-    def bar_chart_group(**props) = _pending_app.bar_chart_group(**props)
-    def barchartgroup(**props) = _pending_app.barchartgroup(**props)
-    def bar_chart_rod(**props) = _pending_app.bar_chart_rod(**props)
-    def barchartrod(**props) = _pending_app.barchartrod(**props)
-    def bar_chart_rod_stack_item(**props) = _pending_app.bar_chart_rod_stack_item(**props)
-    def barchartrodstackitem(**props) = _pending_app.barchartrodstackitem(**props)
-    def line_chart(**props) = _pending_app.line_chart(**props)
-    def linechart(**props) = _pending_app.linechart(**props)
-    def line_chart_data(**props) = _pending_app.line_chart_data(**props)
-    def linechartdata(**props) = _pending_app.linechartdata(**props)
-    def line_chart_data_point(**props) = _pending_app.line_chart_data_point(**props)
-    def linechartdatapoint(**props) = _pending_app.linechartdatapoint(**props)
-    def pie_chart(**props) = _pending_app.pie_chart(**props)
-    def piechart(**props) = _pending_app.piechart(**props)
-    def pie_chart_section(**props) = _pending_app.pie_chart_section(**props)
-    def piechartsection(**props) = _pending_app.piechartsection(**props)
-    def candlestick_chart(**props) = _pending_app.candlestick_chart(**props)
-    def candlestickchart(**props) = _pending_app.candlestickchart(**props)
-    def candlestick_chart_spot(**props) = _pending_app.candlestick_chart_spot(**props)
-    def candlestickchartspot(**props) = _pending_app.candlestickchartspot(**props)
-    def radar_chart(**props) = _pending_app.radar_chart(**props)
-    def radarchart(**props) = _pending_app.radarchart(**props)
-    def radar_chart_title(**props) = _pending_app.radar_chart_title(**props)
-    def radarcharttitle(**props) = _pending_app.radarcharttitle(**props)
-    def radar_data_set(**props) = _pending_app.radar_data_set(**props)
-    def radardataset(**props) = _pending_app.radardataset(**props)
-    def radar_data_set_entry(**props) = _pending_app.radar_data_set_entry(**props)
-    def radardatasetentry(**props) = _pending_app.radardatasetentry(**props)
-    def scatter_chart(**props) = _pending_app.scatter_chart(**props)
-    def scatterchart(**props) = _pending_app.scatterchart(**props)
-    def scatter_chart_spot(**props) = _pending_app.scatter_chart_spot(**props)
-    def scatterchartspot(**props) = _pending_app.scatterchartspot(**props)
-    def chart_axis(**props) = _pending_app.chart_axis(**props)
-    def chartaxis(**props) = _pending_app.chartaxis(**props)
-    def chart_axis_label(**props) = _pending_app.chart_axis_label(**props)
-    def chartaxislabel(**props) = _pending_app.chartaxislabel(**props)
-    def web_view(**props) = _pending_app.web_view(**props)
-    def webview(**props) = _pending_app.webview(**props)
-    def fab(content = nil, **props) = _pending_app.fab(content, **props)
-    def cupertino_button(**props) = _pending_app.cupertino_button(**props)
-    def cupertinobutton(**props) = _pending_app.cupertinobutton(**props)
-    def cupertino_filled_button(**props) = _pending_app.cupertino_filled_button(**props)
-    def cupertinofilledbutton(**props) = _pending_app.cupertinofilledbutton(**props)
-    def cupertino_text_field(**props) = _pending_app.cupertino_text_field(**props)
-    def cupertinotextfield(**props) = _pending_app.cupertinotextfield(**props)
-    def cupertino_switch(**props) = _pending_app.cupertino_switch(**props)
-    def cupertinoswitch(**props) = _pending_app.cupertinoswitch(**props)
-    def cupertino_slider(**props) = _pending_app.cupertino_slider(**props)
-    def cupertinoslider(**props) = _pending_app.cupertinoslider(**props)
-    def cupertino_alert_dialog(**props) = _pending_app.cupertino_alert_dialog(**props)
-    def cupertinoalertdialog(**props) = _pending_app.cupertinoalertdialog(**props)
-    def cupertino_action_sheet(**props) = _pending_app.cupertino_action_sheet(**props)
-    def cupertinoactionsheet(**props) = _pending_app.cupertinoactionsheet(**props)
-    def cupertino_dialog_action(**props) = _pending_app.cupertino_dialog_action(**props)
-    def cupertinodialogaction(**props) = _pending_app.cupertinodialogaction(**props)
-    def cupertino_navigation_bar(**props) = _pending_app.cupertino_navigation_bar(**props)
-    def cupertinonavigationbar(**props) = _pending_app.cupertinonavigationbar(**props)
-    def duration(**parts) = duration_in_milliseconds(parts)
+    def page(**props, &block)
+      _pending_app.page(**props, &block)
+    end
+    def control(type, **props, &block)
+      _pending_app.control(type, **props, &block)
+    end
+    def widget(type, **props, &block)
+      _pending_app.widget(type, **props, &block)
+    end
+    def service(type, **props, &block)
+      _pending_app.service(type, **props, &block)
+    end
+    def column(**props, &block)
+      _pending_app.column(**props, &block)
+    end
+    def center(**props, &block)
+      _pending_app.center(**props, &block)
+    end
+    def row(**props, &block)
+      _pending_app.row(**props, &block)
+    end
+    def stack(**props, &block)
+      _pending_app.stack(**props, &block)
+    end
+    def grid_view(**props, &block)
+      _pending_app.grid_view(**props, &block)
+    end
+    def gridview(**props, &block)
+      _pending_app.gridview(**props, &block)
+    end
+    def container(**props, &block)
+      _pending_app.container(**props, &block)
+    end
+    def gesture_detector(**props, &block)
+      _pending_app.gesture_detector(**props, &block)
+    end
+    def gesturedetector(**props, &block)
+      _pending_app.gesturedetector(**props, &block)
+    end
+    def draggable(**props, &block)
+      _pending_app.draggable(**props, &block)
+    end
+    def drag_target(**props, &block)
+      _pending_app.drag_target(**props, &block)
+    end
+    def dragtarget(**props, &block)
+      _pending_app.dragtarget(**props, &block)
+    end
+    def text(value = nil, **props)
+      _pending_app.text(value, **props)
+    end
+    def button(**props)
+      _pending_app.button(**props)
+    end
+    def elevated_button(**props)
+      _pending_app.elevated_button(**props)
+    end
+    def text_field(**props)
+      _pending_app.text_field(**props)
+    end
+    def textfield(**props)
+      _pending_app.textfield(**props)
+    end
+    def icon(**props)
+      _pending_app.icon(**props)
+    end
+    def image(src = nil, **props)
+      _pending_app.image(src, **props)
+    end
+    def icon_button(**props)
+      _pending_app.icon_button(**props)
+    end
+    def iconbutton(**props)
+      _pending_app.iconbutton(**props)
+    end
+    def app_bar(**props)
+      _pending_app.app_bar(**props)
+    end
+    def appbar(**props)
+      _pending_app.appbar(**props)
+    end
+    def clipboard(**props)
+      _pending_app.clipboard(**props)
+    end
+    def text_button(**props)
+      _pending_app.text_button(**props)
+    end
+    def textbutton(**props)
+      _pending_app.textbutton(**props)
+    end
+    def filled_button(**props)
+      _pending_app.filled_button(**props)
+    end
+    def filledbutton(**props)
+      _pending_app.filledbutton(**props)
+    end
+    def checkbox(**props)
+      _pending_app.checkbox(**props)
+    end
+    def radio(**props)
+      _pending_app.radio(**props)
+    end
+    def radio_group(**props)
+      _pending_app.radio_group(**props)
+    end
+    def radiogroup(**props)
+      _pending_app.radiogroup(**props)
+    end
+    def alert_dialog(**props)
+      _pending_app.alert_dialog(**props)
+    end
+    def alertdialog(**props)
+      _pending_app.alertdialog(**props)
+    end
+    def snack_bar(**props)
+      _pending_app.snack_bar(**props)
+    end
+    def snackbar(**props)
+      _pending_app.snackbar(**props)
+    end
+    def bottom_sheet(**props)
+      _pending_app.bottom_sheet(**props)
+    end
+    def bottomsheet(**props)
+      _pending_app.bottomsheet(**props)
+    end
+    def markdown(value = nil, **props)
+      _pending_app.markdown(value, **props)
+    end
+    def floating_action_button(**props)
+      _pending_app.floating_action_button(**props)
+    end
+    def floatingactionbutton(**props)
+      _pending_app.floatingactionbutton(**props)
+    end
+    def tabs(**props, &block)
+      _pending_app.tabs(**props, &block)
+    end
+    def tab(**props, &block)
+      _pending_app.tab(**props, &block)
+    end
+    def tab_bar(**props, &block)
+      _pending_app.tab_bar(**props, &block)
+    end
+    def tabbar(**props, &block)
+      _pending_app.tabbar(**props, &block)
+    end
+    def tab_bar_view(**props, &block)
+      _pending_app.tab_bar_view(**props, &block)
+    end
+    def tabbarview(**props, &block)
+      _pending_app.tabbarview(**props, &block)
+    end
+    def navigation_bar(**props, &block)
+      _pending_app.navigation_bar(**props, &block)
+    end
+    def navigationbar(**props, &block)
+      _pending_app.navigationbar(**props, &block)
+    end
+    def navigation_bar_destination(**props, &block)
+      _pending_app.navigation_bar_destination(**props, &block)
+    end
+    def navigationbardestination(**props, &block)
+      _pending_app.navigationbardestination(**props, &block)
+    end
+    def bar_chart(**props)
+      _pending_app.bar_chart(**props)
+    end
+    def barchart(**props)
+      _pending_app.barchart(**props)
+    end
+    def bar_chart_group(**props)
+      _pending_app.bar_chart_group(**props)
+    end
+    def barchartgroup(**props)
+      _pending_app.barchartgroup(**props)
+    end
+    def bar_chart_rod(**props)
+      _pending_app.bar_chart_rod(**props)
+    end
+    def barchartrod(**props)
+      _pending_app.barchartrod(**props)
+    end
+    def bar_chart_rod_stack_item(**props)
+      _pending_app.bar_chart_rod_stack_item(**props)
+    end
+    def barchartrodstackitem(**props)
+      _pending_app.barchartrodstackitem(**props)
+    end
+    def line_chart(**props)
+      _pending_app.line_chart(**props)
+    end
+    def linechart(**props)
+      _pending_app.linechart(**props)
+    end
+    def line_chart_data(**props)
+      _pending_app.line_chart_data(**props)
+    end
+    def linechartdata(**props)
+      _pending_app.linechartdata(**props)
+    end
+    def line_chart_data_point(**props)
+      _pending_app.line_chart_data_point(**props)
+    end
+    def linechartdatapoint(**props)
+      _pending_app.linechartdatapoint(**props)
+    end
+    def pie_chart(**props)
+      _pending_app.pie_chart(**props)
+    end
+    def piechart(**props)
+      _pending_app.piechart(**props)
+    end
+    def pie_chart_section(**props)
+      _pending_app.pie_chart_section(**props)
+    end
+    def piechartsection(**props)
+      _pending_app.piechartsection(**props)
+    end
+    def candlestick_chart(**props)
+      _pending_app.candlestick_chart(**props)
+    end
+    def candlestickchart(**props)
+      _pending_app.candlestickchart(**props)
+    end
+    def candlestick_chart_spot(**props)
+      _pending_app.candlestick_chart_spot(**props)
+    end
+    def candlestickchartspot(**props)
+      _pending_app.candlestickchartspot(**props)
+    end
+    def radar_chart(**props)
+      _pending_app.radar_chart(**props)
+    end
+    def radarchart(**props)
+      _pending_app.radarchart(**props)
+    end
+    def radar_chart_title(**props)
+      _pending_app.radar_chart_title(**props)
+    end
+    def radarcharttitle(**props)
+      _pending_app.radarcharttitle(**props)
+    end
+    def radar_data_set(**props)
+      _pending_app.radar_data_set(**props)
+    end
+    def radardataset(**props)
+      _pending_app.radardataset(**props)
+    end
+    def radar_data_set_entry(**props)
+      _pending_app.radar_data_set_entry(**props)
+    end
+    def radardatasetentry(**props)
+      _pending_app.radardatasetentry(**props)
+    end
+    def scatter_chart(**props)
+      _pending_app.scatter_chart(**props)
+    end
+    def scatterchart(**props)
+      _pending_app.scatterchart(**props)
+    end
+    def scatter_chart_spot(**props)
+      _pending_app.scatter_chart_spot(**props)
+    end
+    def scatterchartspot(**props)
+      _pending_app.scatterchartspot(**props)
+    end
+    def chart_axis(**props)
+      _pending_app.chart_axis(**props)
+    end
+    def chartaxis(**props)
+      _pending_app.chartaxis(**props)
+    end
+    def chart_axis_label(**props)
+      _pending_app.chart_axis_label(**props)
+    end
+    def chartaxislabel(**props)
+      _pending_app.chartaxislabel(**props)
+    end
+    def web_view(**props)
+      _pending_app.web_view(**props)
+    end
+    def webview(**props)
+      _pending_app.webview(**props)
+    end
+    def fab(content = nil, **props)
+      _pending_app.fab(content, **props)
+    end
+    def cupertino_button(**props)
+      _pending_app.cupertino_button(**props)
+    end
+    def cupertinobutton(**props)
+      _pending_app.cupertinobutton(**props)
+    end
+    def cupertino_filled_button(**props)
+      _pending_app.cupertino_filled_button(**props)
+    end
+    def cupertinofilledbutton(**props)
+      _pending_app.cupertinofilledbutton(**props)
+    end
+    def cupertino_text_field(**props)
+      _pending_app.cupertino_text_field(**props)
+    end
+    def cupertinotextfield(**props)
+      _pending_app.cupertinotextfield(**props)
+    end
+    def cupertino_switch(**props)
+      _pending_app.cupertino_switch(**props)
+    end
+    def cupertinoswitch(**props)
+      _pending_app.cupertinoswitch(**props)
+    end
+    def cupertino_slider(**props)
+      _pending_app.cupertino_slider(**props)
+    end
+    def cupertinoslider(**props)
+      _pending_app.cupertinoslider(**props)
+    end
+    def cupertino_alert_dialog(**props)
+      _pending_app.cupertino_alert_dialog(**props)
+    end
+    def cupertinoalertdialog(**props)
+      _pending_app.cupertinoalertdialog(**props)
+    end
+    def cupertino_action_sheet(**props)
+      _pending_app.cupertino_action_sheet(**props)
+    end
+    def cupertinoactionsheet(**props)
+      _pending_app.cupertinoactionsheet(**props)
+    end
+    def cupertino_dialog_action(**props)
+      _pending_app.cupertino_dialog_action(**props)
+    end
+    def cupertinodialogaction(**props)
+      _pending_app.cupertinodialogaction(**props)
+    end
+    def cupertino_navigation_bar(**props)
+      _pending_app.cupertino_navigation_bar(**props)
+    end
+    def cupertinonavigationbar(**props)
+      _pending_app.cupertinonavigationbar(**props)
+    end
+    def duration(**parts)
+      duration_in_milliseconds(parts)
+    end
 
     class App
       include UI::ControlMethods
@@ -21191,8 +22098,12 @@ module Ruflet
 
       private
 
-      def build_widget(type, **props, &block) = control(type.to_s, **props, &block)
-      def build_service(type, **props, &block) = service(type.to_s, **props, &block)
+      def build_widget(type, **props, &block)
+        control(type.to_s, **props, &block)
+      end
+      def build_service(type, **props, &block)
+        service(type.to_s, **props, &block)
+      end
 
       def attach(control)
         if @stack.empty?
@@ -21361,8 +22272,12 @@ module Ruflet
     class << self
       include SharedControlForwarders
 
-      def app(**opts, &block) = Ruflet.app(**opts, &block)
-      def page(**props, &block) = Ruflet::DSL.page(**props, &block)
+      def app(**opts, &block)
+        Ruflet.app(**opts, &block)
+      end
+      def page(**props, &block)
+        Ruflet::DSL.page(**props, &block)
+      end
 
       private
 
@@ -21378,8 +22293,12 @@ module Kernel
 
   private
 
-  def app(**opts, &block) = Ruflet::DSL.app(**opts, &block)
-  def page(**props, &block) = Ruflet::DSL.page(**props, &block)
+  def app(**opts, &block)
+    Ruflet::DSL.app(**opts, &block)
+  end
+  def page(**props, &block)
+    Ruflet::DSL.page(**props, &block)
+  end
 
   def control_delegate
     Ruflet::DSL
@@ -22512,7 +23431,7 @@ end
       handler = @page_event_handlers[normalized_name]
       return unless handler.respond_to?(:call)
 
-      event = Event.new(name: event_name, target: 1, raw_data: data, page: self, control: nil)
+      event = Ruflet::Event.new(name: event_name, target: 1, raw_data: data, page: self, control: nil)
       handler.call(event)
     end
   end
@@ -22763,11 +23682,14 @@ end
       end
 
       def on_register_client(ws, payload)
+        step = "normalizing register payload"
         warn "[embedded server] on_register_client begin" if ENV["RUFLET_DEBUG"] == "1"
         normalized = Protocol.normalize_register_payload(payload)
+        step = "creating session"
         session_id = normalized["session_id"].to_s.empty? ? pseudo_uuid : normalized["session_id"]
         warn "[embedded server] session_id=#{session_id}" if ENV["RUFLET_DEBUG"] == "1"
 
+        step = "creating page"
         page = Page.new(
           session_id: session_id,
           client_details: normalized,
@@ -22779,11 +23701,13 @@ end
 
         page.title = "Ruflet App"
 
+        step = "storing session"
         @sessions_mutex.synchronize do
           @sessions[ws.session_key] = page
         end
         warn "[embedded server] session stored" if ENV["RUFLET_DEBUG"] == "1"
 
+        step = "sending initial response"
         initial_response = [
           Protocol::ACTIONS[:register_client],
           {
@@ -22795,17 +23719,20 @@ end
         ws.send_binary(Ruflet::WireCodec.pack(initial_response))
         warn "[embedded server] initial response sent" if ENV["RUFLET_DEBUG"] == "1"
 
+        step = "running app block"
         @app_block.call(page)
         warn "[embedded server] app block finished" if ENV["RUFLET_DEBUG"] == "1"
+        step = "updating page"
         page.update
         warn "[embedded server] page updated" if ENV["RUFLET_DEBUG"] == "1"
       rescue StandardError => e
+        message = e.message.to_s.empty? ? "embedded server failed while #{step}: #{e.class}" : e.message
         if ENV["RUFLET_DEBUG"] == "1"
-          warn "[embedded server] on_register_client error class=#{e.class} message=#{e.message.inspect}"
+          warn "[embedded server] on_register_client error class=#{e.class} message=#{message.inspect}"
           warn e.backtrace.join("\n") if e.backtrace
         end
-        send_message(ws, Protocol::ACTIONS[:session_crashed], { "message" => e.message })
-        raise
+        send_message(ws, Protocol::ACTIONS[:session_crashed], { "message" => message })
+        raise RuntimeError, message
       end
 
       def handle_socket(socket)
@@ -22895,7 +23822,9 @@ end
         "socket" => true,
         "thread" => true,
         "digest/sha1" => true,
-        "securerandom" => true
+        "securerandom" => true,
+        "tmpdir" => true,
+        "fileutils" => true
       }
       return true if bundled_features[feature.to_s]
       raise LoadError, "cannot load such file -- #{feature}"

@@ -3,6 +3,8 @@
 module RufletStudio
   module SectionsMedia
     def build_barometer(page, _status)
+      return mobile_only_notice(page, "Barometer") unless mobile_platform?(page)
+
       reading_text = text(value: "Waiting for barometer reading...")
       error_text = text(value: "")
 

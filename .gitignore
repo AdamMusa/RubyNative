@@ -23,3 +23,6 @@ ruby_runtime/third_party/
 
 # Local demo app
 mruby_runtime_demo/
+
+# Ruflet Studio local build output
+ruflet_studio/build/

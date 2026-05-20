@@ -113,6 +113,47 @@ class RufletCliUpdateCommandTest < Minitest::Test
     end
   end
 
+  def test_sync_self_contained_project_assets_normalizes_endless_methods
+    builder = DummyBuilder.new
+
+    Dir.mktmpdir do |dir|
+      client_dir = File.join(dir, "ruflet_client")
+      FileUtils.mkdir_p(File.join(client_dir, "assets"))
+      File.write(File.join(dir, "main.rb"), "def title = \"Ruflet\"\n")
+
+      Dir.chdir(dir) do
+        builder.send(:sync_self_contained_project_assets, client_dir)
+      end
+
+      copied = File.read(File.join(client_dir, "assets", File.basename(dir), "main.rb"))
+      assert_includes copied, "def title\n"
+      assert_includes copied, "\"Ruflet\"\n"
+      assert_includes copied, "end\n"
+      refute_includes copied, "def title ="
+    end
+  end
+
+  def test_sync_self_contained_project_assets_bundles_entrypoint_require_relative
+    builder = DummyBuilder.new
+
+    Dir.mktmpdir do |dir|
+      client_dir = File.join(dir, "ruflet_client")
+      FileUtils.mkdir_p(File.join(client_dir, "assets"))
+      FileUtils.mkdir_p(File.join(dir, "lib"))
+      File.write(File.join(dir, "main.rb"), "require_relative \"lib/app\"\nDemoApp.new.run\n")
+      File.write(File.join(dir, "lib", "app.rb"), "class DemoApp\nend\n")
+
+      Dir.chdir(dir) do
+        builder.send(:sync_self_contained_project_assets, client_dir)
+      end
+
+      copied = File.read(File.join(client_dir, "assets", File.basename(dir), "main.rb"))
+      refute_includes copied, "require_relative"
+      assert_includes copied, "class DemoApp"
+      assert_includes copied, "DemoApp.new.run"
+    end
+  end
+
   def test_prepare_flutter_client_uses_explicit_local_ruby_runtime_override
     builder = DummyBuilder.new
 
@@ -276,6 +317,40 @@ class RufletCliUpdateCommandTest < Minitest::Test
         main = File.read(File.join(client_dir, "lib", "main.self.dart"))
         assert_includes main, "package:flet_webview/flet_webview.dart"
         assert_includes main, "ruflet_webview.Extension(),"
+      ensure
+        Ruflet::CLI.define_singleton_method(:resolve_ruflet_client_template_root, original_method)
+        Ruflet::CLI.singleton_class.send(:private, :resolve_ruflet_client_template_root)
+      end
+    end
+  end
+
+  def test_refresh_managed_client_template_files_refreshes_macos_entitlements
+    builder = DummyBuilder.new
+
+    Dir.mktmpdir do |dir|
+      template_dir = File.join(dir, "template")
+      client_dir = File.join(dir, "client")
+      FileUtils.mkdir_p(File.join(template_dir, "macos", "Runner"))
+      FileUtils.mkdir_p(File.join(client_dir, "macos", "Runner"))
+
+      File.write(
+        File.join(template_dir, "macos", "Runner", "Release.entitlements"),
+        "<plist><dict><key>com.apple.security.files.user-selected.read-write</key><true/></dict></plist>\n"
+      )
+      File.write(
+        File.join(client_dir, "macos", "Runner", "Release.entitlements"),
+        "<plist><dict></dict></plist>\n"
+      )
+
+      original_method = Ruflet::CLI.method(:resolve_ruflet_client_template_root)
+      Ruflet::CLI.define_singleton_method(:resolve_ruflet_client_template_root) { template_dir }
+      Ruflet::CLI.singleton_class.send(:private, :resolve_ruflet_client_template_root)
+
+      begin
+        builder.send(:refresh_managed_client_template_files, client_dir, verbose: false)
+
+        refreshed = File.read(File.join(client_dir, "macos", "Runner", "Release.entitlements"))
+        assert_includes refreshed, "com.apple.security.files.user-selected.read-write"
       ensure
         Ruflet::CLI.define_singleton_method(:resolve_ruflet_client_template_root, original_method)
         Ruflet::CLI.singleton_class.send(:private, :resolve_ruflet_client_template_root)

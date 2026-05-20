@@ -1,7 +1,7 @@
 app:
-  name: ruflet stuido
-  display_name: Suflet Stuido
-  package_name: ruflet_stuido
+  name: ruflet_studio
+  display_name: Ruflet Studio
+  package_name: ruflet_studio
   organization: com.example
   version: 1.0.0+1
   description: A new Ruflet app.
@@ -10,8 +10,29 @@ app:
   backend_url: ""
 
 # Source of truth for Flutter client extensions/plugins.
-# Examples: camera, video, audio, flashlight, webview, map
-services: []
+# Ruflet Studio demos these services and extension-backed controls.
+services:
+  - accelerometer
+  - audio
+  - barometer
+  - battery
+  - camera
+  - charts
+  - clipboard
+  - connectivity
+  - file_picker
+  - flashlight
+  - gyroscope
+  - magnetometer
+  - screen_brightness
+  - screenshot
+  - semantics_service
+  - shake_detector
+  - share
+  - storage_paths
+  - user_accelerometer
+  - video
+  - webview
 
 # Build assets configuration consumed by `ruflet build`.
 # Paths are relative to this file unless absolute.
