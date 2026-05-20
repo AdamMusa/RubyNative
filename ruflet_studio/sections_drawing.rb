@@ -22,7 +22,7 @@ module RufletStudio
 
       drawing_canvas = canvas(
         demo_shapes,
-        width: 260,
+        width: 420,
         height: 260,
         content: gesture_detector(
           on_pan_start: ->(e) {
