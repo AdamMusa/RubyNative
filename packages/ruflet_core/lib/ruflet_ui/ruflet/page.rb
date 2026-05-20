@@ -308,6 +308,18 @@ module Ruflet
       service(:audio, **props)
     end
 
+    def browser_context_menu(**props)
+      service(:browser_context_menu, **props)
+    end
+
+    def window(**props)
+      service(:window, **props)
+    end
+
+    def tester(**props)
+      service(:tester, **props)
+    end
+
     def add_service(*value)
       @services_container.props["_services"] = services + value.flatten.compact
       refresh_services_container!
@@ -659,6 +671,167 @@ module Ruflet
 
     def upload_files(files, timeout: nil, on_result: nil)
       upload(files, timeout: timeout, on_result: on_result)
+    end
+
+    def disable_browser_context_menu(timeout: 10, on_result: nil)
+      invoke_browser_context_menu("disable_menu", timeout: timeout, on_result: on_result)
+    end
+
+    def enable_browser_context_menu(timeout: 10, on_result: nil)
+      invoke_browser_context_menu("enable_menu", timeout: timeout, on_result: on_result)
+    end
+
+    def wait_until_ready_to_show(timeout: 10, on_result: nil)
+      invoke_window("wait_until_ready_to_show", timeout: timeout, on_result: on_result)
+    end
+
+    def window_to_front(timeout: 10, on_result: nil)
+      invoke_window("to_front", timeout: timeout, on_result: on_result)
+    end
+
+    def center_window(timeout: 10, on_result: nil)
+      invoke_window("center", timeout: timeout, on_result: on_result)
+    end
+
+    def close_window(timeout: 10, on_result: nil)
+      invoke_window("close", timeout: timeout, on_result: on_result)
+    end
+
+    def destroy_window(timeout: 10, on_result: nil)
+      invoke_window("destroy", timeout: timeout, on_result: on_result)
+    end
+
+    def start_window_dragging(timeout: 10, on_result: nil)
+      invoke_window("start_dragging", timeout: timeout, on_result: on_result)
+    end
+
+    def start_window_resizing(edge, timeout: 10, on_result: nil)
+      invoke_window(
+        "start_resizing",
+        args: { "edge" => normalize_service_value(edge) },
+        timeout: timeout,
+        on_result: on_result
+      )
+    end
+
+    def tester_pump(options = nil, duration: nil, timeout: 10, on_result: nil)
+      duration = options[:duration] || options["duration"] if options.is_a?(Hash) && duration.nil?
+      invoke_tester("pump", args: compact_service_args("duration" => duration), timeout: timeout, on_result: on_result)
+    end
+
+    def tester_pump_and_settle(options = nil, duration: nil, timeout: 10, on_result: nil)
+      duration = options[:duration] || options["duration"] if options.is_a?(Hash) && duration.nil?
+      invoke_tester("pump_and_settle", args: compact_service_args("duration" => duration), timeout: timeout, on_result: on_result)
+    end
+
+    def find_by_text(text, timeout: 10, on_result: nil)
+      invoke_tester("find_by_text", args: { "text" => text }, timeout: timeout, on_result: on_result)
+    end
+
+    def find_by_text_containing(pattern, timeout: 10, on_result: nil)
+      invoke_tester("find_by_text_containing", args: { "pattern" => pattern }, timeout: timeout, on_result: on_result)
+    end
+
+    def find_by_key(key, timeout: 10, on_result: nil)
+      invoke_tester("find_by_key", args: { "key" => key }, timeout: timeout, on_result: on_result)
+    end
+
+    def find_by_tooltip(value, timeout: 10, on_result: nil)
+      invoke_tester("find_by_tooltip", args: { "value" => value }, timeout: timeout, on_result: on_result)
+    end
+
+    def find_by_icon(icon, timeout: 10, on_result: nil)
+      invoke_tester("find_by_icon", args: { "icon" => normalize_service_value(icon) }, timeout: timeout, on_result: on_result)
+    end
+
+    def take_screenshot(name, timeout: 10, on_result: nil)
+      invoke_tester("take_screenshot", args: { "name" => name }, timeout: timeout, on_result: on_result)
+    end
+
+    def tap(finder_id = nil, options = nil, finder_index: nil, timeout: 10, on_result: nil)
+      finder_index = options[:finder_index] || options["finder_index"] if options.is_a?(Hash) && finder_index.nil?
+      invoke_tester_finder("tap", finder_id, finder_index: finder_index, timeout: timeout, on_result: on_result)
+    end
+
+    def mouse_click(finder_id = nil, options = nil, finder_index: nil, timeout: 10, on_result: nil)
+      finder_index = options[:finder_index] || options["finder_index"] if options.is_a?(Hash) && finder_index.nil?
+      invoke_tester_finder("mouse_click", finder_id, finder_index: finder_index, timeout: timeout, on_result: on_result)
+    end
+
+    def mouse_double_click(finder_id = nil, options = nil, finder_index: nil, timeout: 10, on_result: nil)
+      finder_index = options[:finder_index] || options["finder_index"] if options.is_a?(Hash) && finder_index.nil?
+      invoke_tester_finder("mouse_double_click", finder_id, finder_index: finder_index, timeout: timeout, on_result: on_result)
+    end
+
+    def right_mouse_click(finder_id = nil, options = nil, finder_index: nil, timeout: 10, on_result: nil)
+      finder_index = options[:finder_index] || options["finder_index"] if options.is_a?(Hash) && finder_index.nil?
+      invoke_tester_finder("right_mouse_click", finder_id, finder_index: finder_index, timeout: timeout, on_result: on_result)
+    end
+
+    def tap_at(offset = nil, timeout: 10, on_result: nil)
+      invoke_tester_at("tap_at", offset, timeout: timeout, on_result: on_result)
+    end
+
+    def mouse_click_at(offset = nil, timeout: 10, on_result: nil)
+      invoke_tester_at("mouse_click_at", offset, timeout: timeout, on_result: on_result)
+    end
+
+    def mouse_double_click_at(offset = nil, timeout: 10, on_result: nil)
+      invoke_tester_at("mouse_double_click_at", offset, timeout: timeout, on_result: on_result)
+    end
+
+    def right_mouse_click_at(offset = nil, timeout: 10, on_result: nil)
+      invoke_tester_at("right_mouse_click_at", offset, timeout: timeout, on_result: on_result)
+    end
+
+    def drag(finder_id, offset, finder_index: nil, timeout: 10, on_result: nil)
+      invoke_tester(
+        "drag",
+        args: compact_service_args(
+          "finder_id" => finder_id,
+          "finder_index" => finder_index,
+          "offset" => offset
+        ),
+        timeout: timeout,
+        on_result: on_result
+      )
+    end
+
+    def drag_from(start, offset, timeout: 10, on_result: nil)
+      invoke_tester(
+        "drag_from",
+        args: compact_service_args("start" => start, "offset" => offset),
+        timeout: timeout,
+        on_result: on_result
+      )
+    end
+
+    def long_press(finder_id = nil, options = nil, finder_index: nil, timeout: 10, on_result: nil)
+      finder_index = options[:finder_index] || options["finder_index"] if options.is_a?(Hash) && finder_index.nil?
+      invoke_tester_finder("long_press", finder_id, finder_index: finder_index, timeout: timeout, on_result: on_result)
+    end
+
+    def enter_text(finder_id, text, options = nil, finder_index: nil, timeout: 10, on_result: nil)
+      finder_index = options[:finder_index] || options["finder_index"] if options.is_a?(Hash) && finder_index.nil?
+      invoke_tester(
+        "enter_text",
+        args: compact_service_args(
+          "finder_id" => finder_id,
+          "finder_index" => finder_index,
+          "text" => text
+        ),
+        timeout: timeout,
+        on_result: on_result
+      )
+    end
+
+    def mouse_hover(finder_id = nil, options = nil, finder_index: nil, timeout: 10, on_result: nil)
+      finder_index = options[:finder_index] || options["finder_index"] if options.is_a?(Hash) && finder_index.nil?
+      invoke_tester_finder("mouse_hover", finder_id, finder_index: finder_index, timeout: timeout, on_result: on_result)
+    end
+
+    def tester_teardown(timeout: 10, on_result: nil)
+      invoke_tester("teardown", timeout: timeout, on_result: on_result)
     end
 
     def heavy_impact(timeout: 10, on_result: nil)
@@ -1520,6 +1693,51 @@ module Ruflet
 
     def ensure_url_launcher_service
       service(:url_launcher)
+    end
+
+    def ensure_browser_context_menu_service
+      service(:browser_context_menu)
+    end
+
+    def invoke_browser_context_menu(method_name, timeout:, on_result:)
+      browser_context_menu = ensure_browser_context_menu_service
+      invoke(browser_context_menu, method_name, timeout: timeout, on_result: on_result)
+    end
+
+    def ensure_window_service
+      service(:window)
+    end
+
+    def invoke_window(method_name, args: nil, timeout:, on_result:)
+      window = ensure_window_service
+      invoke(window, method_name, args: args, timeout: timeout, on_result: on_result)
+    end
+
+    def ensure_tester_service
+      service(:tester)
+    end
+
+    def invoke_tester(method_name, args: nil, timeout:, on_result:)
+      tester = ensure_tester_service
+      invoke(tester, method_name, args: args, timeout: timeout, on_result: on_result)
+    end
+
+    def invoke_tester_finder(method_name, finder_id, finder_index:, timeout:, on_result:)
+      invoke_tester(
+        method_name,
+        args: compact_service_args("finder_id" => finder_id, "finder_index" => finder_index),
+        timeout: timeout,
+        on_result: on_result
+      )
+    end
+
+    def invoke_tester_at(method_name, offset, timeout:, on_result:)
+      invoke_tester(
+        method_name,
+        args: compact_service_args("offset" => offset),
+        timeout: timeout,
+        on_result: on_result
+      )
     end
 
     def ensure_haptic_feedback_service

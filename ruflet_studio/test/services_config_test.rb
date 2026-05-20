@@ -9,6 +9,7 @@ class ServicesConfigTest < Minitest::Test
     "audio" => /page\.audio\(/,
     "barometer" => /page\.barometer\(/,
     "battery" => /page\.battery\(/,
+    "browser_context_menu" => /page\.browser_context_menu\(/,
     "camera" => /page\.camera\(/,
     "charts" => /bar_chart\(/,
     "clipboard" => /page\.clipboard\b/,
@@ -23,9 +24,11 @@ class ServicesConfigTest < Minitest::Test
     "shake_detector" => /page\.shake_detector\(/,
     "share" => /page\.share(?:\b|_)/,
     "storage_paths" => /page\.storage_paths\b/,
+    "tester" => /page\.tester\(/,
     "user_accelerometer" => /page\.user_accelerometer\(/,
     "video" => /\bvideo\(/,
-    "webview" => /\bweb_view\(/
+    "webview" => /\bweb_view\(/,
+    "window" => /page\.window\(/
   }.freeze
 
   def test_ruflet_yaml_lists_every_service_used_by_studio

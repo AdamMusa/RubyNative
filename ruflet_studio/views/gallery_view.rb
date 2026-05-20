@@ -54,6 +54,7 @@ module RufletStudio
         tile(page, Ruflet::MaterialIcons::DIRECTIONS_RUN, "User Accelerometer", "/user-accelerometer"),
         tile(page, Ruflet::MaterialIcons::EXPLORE, "Magnetometer", "/magnetometer"),
         tile(page, Ruflet::MaterialIcons::AIR, "Barometer", "/barometer"),
+        tile(page, Ruflet::MaterialIcons::PUBLIC, "Browser Context Menu", "/browser-context-menu"),
         tile(page, Ruflet::MaterialIcons::VIBRATION, "Shake Detector", "/shake-detector"),
         tile(page, Ruflet::MaterialIcons::ACCESSIBILITY, "Semantics Service", "/semantics-service"),
         tile(page, Ruflet::MaterialIcons::SCREENSHOT, "Screenshot", "/screenshot"),
@@ -67,7 +68,9 @@ module RufletStudio
         tile(page, Ruflet::MaterialIcons::FLASH_ON, "Flashlight", "/flashlight"),
         tile(page, Ruflet::MaterialIcons::WIFI, "Connectivity", "/connectivity"),
         tile(page, Ruflet::MaterialIcons::PHOTO_CAMERA, "Camera", "/camera"),
-        tile(page, Ruflet::MaterialIcons::ATTACH_FILE, "File Picker", "/file-picker")
+        tile(page, Ruflet::MaterialIcons::ATTACH_FILE, "File Picker", "/file-picker"),
+        tile(page, Ruflet::MaterialIcons::VIEW_MODULE, "Window", "/window"),
+        tile(page, Ruflet::MaterialIcons::CHECK, "Tester", "/tester")
       ]
     end
 

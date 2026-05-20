@@ -93,6 +93,9 @@ module RufletStudio
       when "/barometer"
         page.views = [detail_view(page, "Barometer", build_barometer(page, status_text(page)),
                                   source_path: "ruflet_studio/sections_media/barometer.rb")]
+      when "/browser-context-menu"
+        page.views = [detail_view(page, "Browser Context Menu", build_browser_context_menu(page, status_text(page)),
+                                  source_path: "ruflet_studio/sections_media/browser_context_menu.rb")]
       when "/shake-detector"
         page.views = [detail_view(page, "Shake Detector", build_shake_detector(page, status_text(page)),
                                   source_path: "ruflet_studio/sections_media/shake_detector.rb")]
@@ -141,6 +144,12 @@ module RufletStudio
       when "/file-picker"
         page.views = [detail_view(page, "File Picker", build_file_picker(page, status_text(page)),
                                   source_path: "ruflet_studio/sections_media/file_picker.rb")]
+      when "/window"
+        page.views = [detail_view(page, "Window", build_window(page, status_text(page)),
+                                  source_path: "ruflet_studio/sections_media/window.rb")]
+      when "/tester"
+        page.views = [detail_view(page, "Tester", build_tester(page, status_text(page)),
+                                  source_path: "ruflet_studio/sections_media/tester.rb")]
       else
         page.views = [gallery_view(page)]
       end

@@ -16,6 +16,7 @@ services:
   - audio
   - barometer
   - battery
+  - browser_context_menu
   - camera
   - charts
   - clipboard
@@ -30,9 +31,11 @@ services:
   - shake_detector
   - share
   - storage_paths
+  - tester
   - user_accelerometer
   - video
   - webview
+  - window
 
 # Build assets configuration consumed by `ruflet build`.
 # Paths are relative to this file unless absolute.
