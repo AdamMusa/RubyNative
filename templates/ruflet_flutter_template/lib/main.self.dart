@@ -36,6 +36,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:ruby_runtime/ruby_runtime.dart';
 
 import 'connection_probe.dart';
+import 'ruflet_file_picker_service.dart';
 
 const bool isProduction = bool.fromEnvironment('dart.vm.product');
 const int kRufletPort = 8550;
@@ -109,6 +110,7 @@ Future<void> main() async {
   }
 
   final extensions = <FletExtension>[
+    RufletFilePickerExtension(),
     ruflet_ads.Extension(),
     ruflet_audio_recorder.Extension(),
     ruflet_camera.Extension(),

@@ -27,6 +27,15 @@ class RufletCliTemplatesTest < Minitest::Test
     assert_includes template, "RubyRuntime.startFileServer"
   end
 
+  def test_flutter_templates_register_ruflet_file_picker_service_override
+    %w[main.self.dart main.server.dart].each do |name|
+      template = File.read(File.expand_path("../../../templates/ruflet_flutter_template/lib/#{name}", __dir__))
+
+      assert_includes template, "import 'ruflet_file_picker_service.dart';"
+      assert_includes template, "RufletFilePickerExtension(),"
+    end
+  end
+
   def test_macos_template_allows_user_selected_files_for_desktop_file_picker
     %w[DebugProfile Release].each do |name|
       entitlements = File.read(File.expand_path("../../../templates/ruflet_flutter_template/macos/Runner/#{name}.entitlements", __dir__))

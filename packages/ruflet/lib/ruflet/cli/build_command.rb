@@ -1108,6 +1108,7 @@ module Ruflet
           "lib/connection_probe.dart",
           "lib/connection_probe_io.dart",
           "lib/connection_probe_stub.dart",
+          "lib/ruflet_file_picker_service.dart",
           "macos/Runner/DebugProfile.entitlements",
           "macos/Runner/Release.entitlements"
         ]

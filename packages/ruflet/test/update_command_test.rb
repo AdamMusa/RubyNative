@@ -337,10 +337,13 @@ class RufletCliUpdateCommandTest < Minitest::Test
         File.join(template_dir, "macos", "Runner", "Release.entitlements"),
         "<plist><dict><key>com.apple.security.files.user-selected.read-write</key><true/></dict></plist>\n"
       )
+      FileUtils.mkdir_p(File.join(template_dir, "lib"))
+      File.write(File.join(template_dir, "lib", "ruflet_file_picker_service.dart"), "class RufletFilePickerExtension {}\n")
       File.write(
         File.join(client_dir, "macos", "Runner", "Release.entitlements"),
         "<plist><dict></dict></plist>\n"
       )
+      FileUtils.mkdir_p(File.join(client_dir, "lib"))
 
       original_method = Ruflet::CLI.method(:resolve_ruflet_client_template_root)
       Ruflet::CLI.define_singleton_method(:resolve_ruflet_client_template_root) { template_dir }
@@ -351,6 +354,10 @@ class RufletCliUpdateCommandTest < Minitest::Test
 
         refreshed = File.read(File.join(client_dir, "macos", "Runner", "Release.entitlements"))
         assert_includes refreshed, "com.apple.security.files.user-selected.read-write"
+        assert_equal(
+          "class RufletFilePickerExtension {}\n",
+          File.read(File.join(client_dir, "lib", "ruflet_file_picker_service.dart"))
+        )
       ensure
         Ruflet::CLI.define_singleton_method(:resolve_ruflet_client_template_root, original_method)
         Ruflet::CLI.singleton_class.send(:private, :resolve_ruflet_client_template_root)
