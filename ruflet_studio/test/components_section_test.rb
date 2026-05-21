@@ -33,6 +33,8 @@ class ComponentsSectionTest < Minitest::Test
       Tabs
       ProgressBar
       ProgressRing
+      GridView
+      InteractiveViewer
       Container
       Row
       Column
@@ -52,7 +54,7 @@ class ComponentsSectionTest < Minitest::Test
 
     assert_includes source, "alert_dialog("
     assert_includes source, "page.dialog = dialog"
-    assert_includes source, "page.update(dialog, open: true)"
+    assert_includes source, "page.show_dialog(dialog)"
     assert_includes source, "page.update(dialog, open: false)"
     assert_includes source, "date_picker("
     assert_includes source, "date_range_picker("
@@ -64,6 +66,8 @@ class ComponentsSectionTest < Minitest::Test
     assert_includes source, "tabs("
     assert_includes source, "progress_bar("
     assert_includes source, "progress_ring("
+    assert_includes source, "grid_view("
+    assert_includes source, "interactive_viewer("
     assert_includes source, "filled_button("
   end
 end

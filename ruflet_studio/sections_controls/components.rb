@@ -23,6 +23,8 @@ module RufletStudio
       { label: "Tabs", slug: "tabs", icon: Ruflet::MaterialIcons[:tab] },
       { label: "ProgressBar", slug: "progress-bar", icon: Ruflet::MaterialIcons[:linear_scale] },
       { label: "ProgressRing", slug: "progress-ring", icon: Ruflet::MaterialIcons[:donut_large] },
+      { label: "GridView", slug: "grid-view", icon: Ruflet::MaterialIcons[:grid_view] },
+      { label: "InteractiveViewer", slug: "interactive-viewer", icon: Ruflet::MaterialIcons[:open_with] },
       { label: "ListTile", slug: "list-tile", icon: Ruflet::MaterialIcons::LIST },
       { label: "Switch", slug: "switch", icon: Ruflet::MaterialIcons::TOGGLE_ON },
       { label: "Slider", slug: "slider", icon: Ruflet::MaterialIcons::TUNE }
@@ -146,7 +148,7 @@ module RufletStudio
           ]
         )
         page.dialog = dialog
-        filled_button(content: text(value: "Open dialog"), on_click: ->(_e) { page.update(dialog, open: true) })
+        filled_button(content: text(value: "Open dialog"), on_click: ->(_e) { page.show_dialog(dialog) })
       when "date-picker"
         dialog = date_picker(
           value: "2026-05-21",
@@ -156,7 +158,7 @@ module RufletStudio
           on_change: ->(event) { page.update(status, value: "Date: #{event.value}") }
         )
         page.dialog = dialog
-        filled_button(content: text(value: "Open date picker"), on_click: ->(_e) { page.update(dialog, open: true) })
+        filled_button(content: text(value: "Open date picker"), on_click: ->(_e) { page.show_dialog(dialog) })
       when "date-range-picker"
         dialog = date_range_picker(
           start_value: "2026-05-01",
@@ -167,7 +169,7 @@ module RufletStudio
           on_change: ->(event) { page.update(status, value: "Range: #{event.data.inspect}") }
         )
         page.dialog = dialog
-        filled_button(content: text(value: "Open range picker"), on_click: ->(_e) { page.update(dialog, open: true) })
+        filled_button(content: text(value: "Open range picker"), on_click: ->(_e) { page.show_dialog(dialog) })
       when "time-picker"
         dialog = time_picker(
           value: "09:30",
@@ -175,7 +177,7 @@ module RufletStudio
           on_change: ->(event) { page.update(status, value: "Time: #{event.value}") }
         )
         page.dialog = dialog
-        filled_button(content: text(value: "Open time picker"), on_click: ->(_e) { page.update(dialog, open: true) })
+        filled_button(content: text(value: "Open time picker"), on_click: ->(_e) { page.show_dialog(dialog) })
       when "data-table"
         data_table(
           [
@@ -241,6 +243,57 @@ module RufletStudio
         progress_bar(value: 0.65, bar_height: 8, color: "#74c0fc", bgcolor: "#172033")
       when "progress-ring"
         progress_ring(value: 0.4, stroke_width: 5, color: "#69db7c", bgcolor: "#172033")
+      when "grid-view"
+        container(
+          height: 260,
+          content: grid_view(
+            runs_count: 3,
+            max_extent: 120,
+            spacing: 8,
+            run_spacing: 8,
+            child_aspect_ratio: 1.15,
+            children: (1..12).map do |index|
+              container(
+                padding: 10,
+                bgcolor: index.even? ? "#172033" : "#1f2937",
+                border_radius: 8,
+                content: column(
+                  spacing: 6,
+                  horizontal_alignment: "center",
+                  children: [
+                    icon(icon: Ruflet::MaterialIcons[:widgets], color: "#9dccff"),
+                    text(value: "Item #{index}", style: { size: 13, color: color_text(page) })
+                  ]
+                )
+              )
+            end
+          )
+        )
+      when "interactive-viewer"
+        interactive_viewer(
+          container(
+            width: 360,
+            height: 220,
+            padding: 18,
+            bgcolor: "#172033",
+            border_radius: 8,
+            content: column(
+              spacing: 12,
+              horizontal_alignment: "center",
+              children: [
+                icon(icon: Ruflet::MaterialIcons[:open_with], color: "#74c0fc", size: 48),
+                text(value: "Pinch, scroll, or drag", style: { size: 16, weight: "w700", color: color_text(page) }),
+                text(value: "InteractiveViewer content", style: { size: 13, color: color_subtle(page) })
+              ]
+            )
+          ),
+          min_scale: 0.5,
+          max_scale: 4,
+          pan_enabled: true,
+          scale_enabled: true,
+          boundary_margin: { left: 80, top: 80, right: 80, bottom: 80 },
+          on_interaction_update: ->(_event) { page.update(status, value: "InteractiveViewer updated") }
+        )
       when "list-tile"
         control(
           :list_tile,
