@@ -218,4 +218,24 @@ class RufletPickerCompatibilityTest < Minitest::Test
       [:time, "20:15"]
     ], events
   end
+
+  def test_show_dialog_mounts_pickers_in_dialogs_container
+    sent = []
+    page = Ruflet::Page.new(
+      session_id: "s1",
+      client_details: { "route" => "/" },
+      sender: ->(action, payload) { sent << [action, payload] }
+    )
+
+    picker = Ruflet.date_picker(value: "2026-05-21", first_date: "2026-01-01", last_date: "2026-12-31")
+    page.add(Ruflet.text("Root"))
+    page.show_dialog(picker)
+
+    controls_patch = sent.last[1]["patch"].find { |op| op[2] == "controls" }
+    picker_patch = controls_patch[3].first
+
+    assert_equal "DatePicker", picker_patch["_c"]
+    assert_equal true, picker_patch["open"]
+    assert_equal "2026-05-21", picker_patch["value"]
+  end
 end

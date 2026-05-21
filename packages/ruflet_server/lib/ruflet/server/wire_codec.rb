@@ -2,8 +2,13 @@
 
 module Ruflet
   class WireCodec
+    PICKER_DATE_CONTROLS = %w[CupertinoDatePicker DatePicker DateRangePicker].freeze
+    PICKER_DATE_KEYS = %w[current_date end_value first_date last_date start_value value].freeze
+    PICKER_TIME_CONTROLS = %w[TimePicker].freeze
+    PICKER_TIME_KEYS = %w[value].freeze
+
     class << self
-      def pack(value)
+      def pack(value, context = nil)
         case value
         when NilClass
           "\xc0".b
@@ -16,11 +21,14 @@ module Ruflet
         when Float
           "\xcb".b + [value].pack("G")
         when String
+          return pack_ext(1, normalize_date_ext(value)) if context == :date
+          return pack_ext(2, normalize_time_ext(value)) if context == :time
+
           binary_string?(value) ? pack_binary(value) : pack_string(value)
         when Symbol
           pack_string(value.to_s)
         when Array
-          pack_array(value)
+          pack_array(value, context)
         when Hash
           pack_map(value)
         else
@@ -86,7 +94,41 @@ module Ruflet
         value.encoding == Encoding::BINARY || !value.valid_encoding?
       end
 
-      def pack_array(value)
+      def pack_ext(type, payload)
+        bytes = payload.to_s.b
+        len = bytes.bytesize
+
+        if len == 1
+          "\xd4".b + [type].pack("c") + bytes
+        elsif len == 2
+          "\xd5".b + [type].pack("c") + bytes
+        elsif len == 4
+          "\xd6".b + [type].pack("c") + bytes
+        elsif len == 8
+          "\xd7".b + [type].pack("c") + bytes
+        elsif len == 16
+          "\xd8".b + [type].pack("c") + bytes
+        elsif len <= 0xff
+          "\xc7".b + [len, type].pack("Cc") + bytes
+        elsif len <= 0xffff
+          "\xc8".b + [len, type].pack("nc") + bytes
+        else
+          "\xc9".b + [len, type].pack("Nc") + bytes
+        end
+      end
+
+      def normalize_date_ext(value)
+        raw = value.to_s
+        return "#{raw}T00:00:00+00:00" if raw.match?(/\A\d{4}-\d{2}-\d{2}\z/)
+
+        raw
+      end
+
+      def normalize_time_ext(value)
+        value.to_s
+      end
+
+      def pack_array(value, context = nil)
         len = value.length
         head =
           if len <= 15
@@ -98,7 +140,7 @@ module Ruflet
           end
 
         body = +"".b
-        value.each { |item| body << pack(item) }
+        value.each { |item| body << pack(item, context) }
         head + body
       end
 
@@ -115,11 +157,20 @@ module Ruflet
           end
 
         body = +"".b
+        control_type = pairs["_c"].to_s
         pairs.each do |k, v|
           body << pack(k)
-          body << pack(v)
+          body << pack(v, picker_prop_context(control_type, k))
         end
         head + body
+      end
+
+      def picker_prop_context(control_type, key)
+        key = key.to_s
+        return :date if PICKER_DATE_CONTROLS.include?(control_type) && PICKER_DATE_KEYS.include?(key)
+        return :time if PICKER_TIME_CONTROLS.include?(control_type) && PICKER_TIME_KEYS.include?(key)
+
+        nil
       end
 
       def read_value(reader)

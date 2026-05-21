@@ -44,6 +44,29 @@ class RufletServerWireCodecTest < Minitest::Test
     assert_equal "js-value", Ruflet::WireCodec.unpack(ext8(4, "js-value"))
   end
 
+  def test_pack_encodes_picker_dates_as_flet_message_pack_ext_values
+    payload = {
+      "_c" => "DatePicker",
+      "value" => "2026-05-20",
+      "first_date" => "2026-01-01",
+      "last_date" => "2026-12-31"
+    }
+
+    encoded = Ruflet::WireCodec.pack(payload)
+
+    assert_includes encoded, ext8(1, "2026-05-20T00:00:00+00:00")
+    assert_includes encoded, ext8(1, "2026-01-01T00:00:00+00:00")
+    assert_includes encoded, ext8(1, "2026-12-31T00:00:00+00:00")
+  end
+
+  def test_pack_encodes_time_picker_value_as_flet_message_pack_ext_value
+    payload = { "_c" => "TimePicker", "value" => "09:30" }
+
+    encoded = Ruflet::WireCodec.pack(payload)
+
+    assert_includes encoded, ext8(2, "09:30")
+  end
+
   private
 
   def ext8(type, payload)
