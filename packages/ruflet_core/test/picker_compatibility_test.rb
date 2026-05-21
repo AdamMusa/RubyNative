@@ -239,7 +239,7 @@ class RufletPickerCompatibilityTest < Minitest::Test
     assert_equal "2026-05-21", picker_patch["value"]
   end
 
-  def test_client_close_clears_dialog_container_before_reopening_picker
+  def test_client_close_keeps_picker_indexed_until_change_event_then_reopens
     sent = []
     page = Ruflet::Page.new(
       session_id: "s1",
@@ -247,8 +247,16 @@ class RufletPickerCompatibilityTest < Minitest::Test
       sender: ->(action, payload) { sent << [action, payload] }
     )
 
-    picker = Ruflet.time_picker(value: "09:30")
-    page.add(Ruflet.text("Root"))
+    changes = []
+    result = Ruflet.text("Time: 09:30")
+    picker = Ruflet.time_picker(
+      value: "09:30",
+      on_change: ->(event) {
+        changes << event.control.props["value"]
+        page.update(result, value: "Time: #{event.control.props["value"]}")
+      }
+    )
+    page.add(Ruflet.column(children: [Ruflet.text("Root"), result]))
     page.show_dialog(picker)
     sent.clear
 
@@ -256,9 +264,15 @@ class RufletPickerCompatibilityTest < Minitest::Test
 
     assert_equal false, picker.props["open"]
     assert_equal "10:15", picker.props["value"]
+    assert_empty sent
+
+    page.dispatch_event(target: picker.wire_id, name: "change", data: "10:15")
+
+    assert_equal ["10:15"], changes
     assert_equal Ruflet::Protocol::ACTIONS[:patch_control], sent.last[0]
     controls_patch = sent.last[1]["patch"].find { |op| op[2] == "controls" }
     assert_equal [], controls_patch[3]
+    assert_equal "Time: 10:15", result.props["value"]
 
     sent.clear
     page.show_dialog(picker)

@@ -1210,8 +1210,6 @@ module Ruflet
       patch = normalize_props(props || {})
       patch.each { |k, v| control.props[k] = v }
 
-      push_dialogs_update! if patch.key?("open") && patch["open"] == false && remove_dialog_tracking(control)
-
       self
     end
 
@@ -1232,7 +1230,7 @@ module Ruflet
       apply_event_value_to_control(control, event) if %w[change select select_change].include?(name.to_s)
       control.emit(name, event)
 
-      if name.to_s == "dismiss" && remove_dialog_tracking(control)
+      if dialog_close_event?(control, name) && remove_dialog_tracking(control)
         push_dialogs_update!
       end
     end
@@ -1636,6 +1634,11 @@ module Ruflet
 
     def dialog_open?(dialog_control)
       @dialogs.include?(dialog_control) && dialog_control.props["open"] == true
+    end
+
+    def dialog_close_event?(control, name)
+      name = name.to_s
+      name == "dismiss" || (%w[change select select_change].include?(name) && @dialogs.include?(control) && control.props["open"] == false)
     end
 
     def remove_dialog_tracking(control)
