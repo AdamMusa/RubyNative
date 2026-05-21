@@ -18,6 +18,16 @@ module RufletStudio
                   page.update(status, value: error ? "Status error: #{error}" : "Microphone: #{result.inspect}")
                 })
               }),
+              text_button(content: text(value: "Request mic"), on_click: ->(_e) {
+                permissions.request("microphone", on_result: ->(result, error) {
+                  page.update(status, value: error ? "Microphone request error: #{error}" : "Microphone request: #{result.inspect}")
+                })
+              }),
+              text_button(content: text(value: "Request camera"), on_click: ->(_e) {
+                permissions.request("camera", on_result: ->(result, error) {
+                  page.update(status, value: error ? "Camera request error: #{error}" : "Camera request: #{result.inspect}")
+                })
+              }),
               text_button(content: text(value: "Open settings"), on_click: ->(_e) {
                 permissions.open_app_settings(on_result: ->(result, error) {
                   page.update(status, value: error ? "Settings error: #{error}" : "Opened: #{result.inspect}")

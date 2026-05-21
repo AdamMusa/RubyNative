@@ -61,7 +61,11 @@ module RufletStudio
               })
             ]
           ),
-          container(expand: true, content: map_control)
+          container(
+            expand: true,
+            height: 520,
+            content: map_control
+          )
         ]
       )
     end

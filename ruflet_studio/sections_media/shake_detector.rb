@@ -10,9 +10,9 @@ module RufletStudio
 
       page.shake_detector(
         minimum_shake_count: 1,
-        shake_count_reset_time_ms: 3_000,
-        shake_slop_time_ms: 500,
-        shake_threshold_gravity: 2.7,
+        shake_count_reset_time_ms: 1_500,
+        shake_slop_time_ms: 250,
+        shake_threshold_gravity: 1.5,
         on_shake: lambda { |_event|
           shake_count += 1
           page.update(state_text, value: "Shake count: #{shake_count}")
