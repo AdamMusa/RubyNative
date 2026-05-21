@@ -11,10 +11,11 @@ class ComponentsSectionTest < Minitest::Test
     assert_includes gallery, "\"Components\""
     assert_includes gallery, "\"/components\""
     assert_includes app, "when \"/components\""
+    assert_includes app, "route.start_with?(\"/components/\")"
     assert_includes controls, "sections_controls/components"
   end
 
-  def test_components_section_displays_supported_widgets
+  def test_components_section_lists_supported_widgets_and_routes_to_details
     source = File.read(File.expand_path("../sections_controls/components.rb", __dir__))
 
     %w[
@@ -31,8 +32,18 @@ class ComponentsSectionTest < Minitest::Test
       assert_includes source, label
     end
 
+    assert_includes source, "SUPPORTED_COMPONENTS.map"
+    assert_includes source, 'page.go("/components/#{slug}"'
+    assert_includes source, "def build_component_detail"
+  end
+
+  def test_component_details_use_real_widget_demos
+    source = File.read(File.expand_path("../sections_controls/components.rb", __dir__))
+
     assert_includes source, "alert_dialog("
     assert_includes source, "data_table("
     assert_includes source, "filled_button("
+    assert_includes source, "page.show_dialog(dialog)"
+    assert_includes source, "page.pop_dialog"
   end
 end
