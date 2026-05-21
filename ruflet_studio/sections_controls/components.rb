@@ -149,15 +149,23 @@ module RufletStudio
         )
         filled_button(content: text(value: "Open dialog"), on_click: ->(_e) { page.show_dialog(dialog) })
       when "date-picker"
+        result = text(value: "Date: 2026-05-21", style: { size: 14, color: color_subtle(page) })
         dialog = date_picker(
           value: "2026-05-21",
           first_date: "2026-01-01",
           last_date: "2026-12-31",
           help_text: "Pick a date",
-          on_change: ->(event) { page.update(status, value: "Date: #{event.control.props["value"]}") }
+          on_change: ->(event) { page.update(result, value: "Date: #{event.control.props["value"]}") }
         )
-        filled_button(content: text(value: "Open date picker"), on_click: ->(_e) { page.show_dialog(dialog) })
+        column(
+          spacing: 10,
+          children: [
+            result,
+            filled_button(content: text(value: "Open date picker"), on_click: ->(_e) { page.show_dialog(dialog) })
+          ]
+        )
       when "date-range-picker"
+        result = text(value: "Range: 2026-05-01 - 2026-05-21", style: { size: 14, color: color_subtle(page) })
         dialog = date_range_picker(
           start_value: "2026-05-01",
           end_value: "2026-05-21",
@@ -167,17 +175,30 @@ module RufletStudio
           on_change: lambda do |event|
             start_value = event.control.props["start_value"]
             end_value = event.control.props["end_value"]
-            page.update(status, value: "Range: #{start_value} - #{end_value}")
+            page.update(result, value: "Range: #{start_value} - #{end_value}")
           end
         )
-        filled_button(content: text(value: "Open range picker"), on_click: ->(_e) { page.show_dialog(dialog) })
+        column(
+          spacing: 10,
+          children: [
+            result,
+            filled_button(content: text(value: "Open range picker"), on_click: ->(_e) { page.show_dialog(dialog) })
+          ]
+        )
       when "time-picker"
+        result = text(value: "Time: 09:30", style: { size: 14, color: color_subtle(page) })
         dialog = time_picker(
           value: "09:30",
           help_text: "Pick a time",
-          on_change: ->(event) { page.update(status, value: "Time: #{event.control.props["value"]}") }
+          on_change: ->(event) { page.update(result, value: "Time: #{event.control.props["value"]}") }
         )
-        filled_button(content: text(value: "Open time picker"), on_click: ->(_e) { page.show_dialog(dialog) })
+        column(
+          spacing: 10,
+          children: [
+            result,
+            filled_button(content: text(value: "Open time picker"), on_click: ->(_e) { page.show_dialog(dialog) })
+          ]
+        )
       when "data-table"
         data_table(
           [

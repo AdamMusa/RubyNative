@@ -93,7 +93,7 @@ class RufletAlertDialogCompatibilityTest < Minitest::Test
     assert_equal [], sent.last[1]["patch"][1][3]
   end
 
-  def test_page_update_close_clears_dialog_tracking_before_reopening
+  def test_page_update_close_keeps_dialog_mounted_until_client_dismiss
     sent = []
     page = Ruflet::Page.new(
       session_id: "s1",
@@ -110,6 +110,10 @@ class RufletAlertDialogCompatibilityTest < Minitest::Test
 
     assert_equal false, dialog.props["open"]
     assert_equal Ruflet::Protocol::ACTIONS[:patch_control], sent.last[0]
+    assert_equal dialog.wire_id, sent.last[1]["id"]
+    assert_includes sent.last[1]["patch"], [0, 0, "open", false]
+
+    page.dispatch_event(target: dialog.wire_id, name: "dismiss", data: nil)
     controls_patch = sent.last[1]["patch"].find { |op| op[2] == "controls" }
     assert_equal [], controls_patch[3]
 

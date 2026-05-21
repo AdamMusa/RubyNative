@@ -58,9 +58,11 @@ class ComponentsSectionTest < Minitest::Test
     assert_includes source, "date_picker("
     assert_includes source, "date_range_picker("
     assert_includes source, "time_picker("
+    assert_includes source, "result = text("
     assert_includes source, 'event.control.props["value"]'
     assert_includes source, 'event.control.props["start_value"]'
     assert_includes source, 'event.control.props["end_value"]'
+    assert_includes source, "page.update(result"
     assert_includes source, "data_table("
     assert_includes source, "dropdown("
     assert_includes source, "checkbox("
