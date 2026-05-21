@@ -33,6 +33,22 @@ class PageBrowserContextMenuServiceTest < Minitest::Test
     end
   end
 
+  def test_browser_context_menu_object_methods_match_flet_api_and_disabled_state
+    sent = []
+    page = build_page(sent)
+    service = page.browser_context_menu
+
+    service.disable
+    disable_payload = sent.reverse.map(&:last).find { |payload| payload["name"] == "disable_menu" }
+    refute_nil disable_payload
+    assert_equal true, service.props["disabled"]
+
+    service.enable
+    enable_payload = sent.reverse.map(&:last).find { |payload| payload["name"] == "enable_menu" }
+    refute_nil enable_payload
+    assert_equal false, service.props["disabled"]
+  end
+
   private
 
   def build_page(sent)

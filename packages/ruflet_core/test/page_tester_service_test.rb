@@ -85,6 +85,31 @@ class PageTesterServiceTest < Minitest::Test
     end
   end
 
+  def test_tester_object_methods_match_flet_api
+    sent = []
+    page = build_page(sent)
+    tester = page.tester
+
+    tester.pump(duration: 100)
+    tester.find_by_text("OK")
+    tester.tap("finder-1", finder_index: 2)
+    tester.drag_from({ x: 1, y: 2 }, { x: 3, y: 4 })
+    tester.teardown
+
+    payloads = sent.map(&:last)
+    assert_equal({ "duration" => 100 }, payloads.find { |payload| payload["name"] == "pump" }["args"])
+    assert_equal({ "text" => "OK" }, payloads.find { |payload| payload["name"] == "find_by_text" }["args"])
+    assert_equal(
+      { "finder_id" => "finder-1", "finder_index" => 2 },
+      payloads.find { |payload| payload["name"] == "tap" }["args"]
+    )
+    assert_equal(
+      { "start" => { "x" => 1, "y" => 2 }, "offset" => { "x" => 3, "y" => 4 } },
+      payloads.find { |payload| payload["name"] == "drag_from" }["args"]
+    )
+    assert_nil payloads.find { |payload| payload["name"] == "teardown" }["args"]
+  end
+
   private
 
   def build_page(sent)

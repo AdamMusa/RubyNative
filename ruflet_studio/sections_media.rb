@@ -3,8 +3,10 @@
 require_relative "sections_media/animation"
 require_relative "sections_media/accelerometer"
 require_relative "sections_media/audio"
+require_relative "sections_media/audio_recorder"
 require_relative "sections_media/video"
 require_relative "sections_media/flashlight"
+require_relative "sections_media/geolocator"
 require_relative "sections_media/gyroscope"
 require_relative "sections_media/user_accelerometer"
 require_relative "sections_media/magnetometer"
@@ -24,6 +26,8 @@ require_relative "sections_media/battery"
 require_relative "sections_media/screen_brightness"
 require_relative "sections_media/window"
 require_relative "sections_media/tester"
+require_relative "sections_media/permission_handler"
+require_relative "sections_media/secure_storage"
 
 module RufletStudio
   module SectionsMedia

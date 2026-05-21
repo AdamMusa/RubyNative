@@ -14,6 +14,7 @@ app:
 services:
   - accelerometer
   - audio
+  - audio_recorder
   - barometer
   - battery
   - browser_context_menu
@@ -23,10 +24,13 @@ services:
   - connectivity
   - file_picker
   - flashlight
+  - geolocator
   - gyroscope
   - magnetometer
+  - permission_handler
   - screen_brightness
   - screenshot
+  - secure_storage
   - semantics_service
   - shake_detector
   - share

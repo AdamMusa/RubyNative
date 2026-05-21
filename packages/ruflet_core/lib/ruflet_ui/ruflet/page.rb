@@ -308,6 +308,10 @@ module Ruflet
       service(:audio, **props)
     end
 
+    def audio_recorder(**props)
+      service(:audio_recorder, **props)
+    end
+
     def browser_context_menu(**props)
       service(:browser_context_menu, **props)
     end
@@ -979,6 +983,18 @@ module Ruflet
 
     def haptic_feedback(**props)
       service(:haptic_feedback, **props)
+    end
+
+    def geolocator(**props)
+      service(:geolocator, **props)
+    end
+
+    def permission_handler(**props)
+      service(:permission_handler, **props)
+    end
+
+    def secure_storage(**props)
+      service(:secure_storage, **props)
     end
 
     def get_application_cache_directory(timeout: nil, on_result: nil)

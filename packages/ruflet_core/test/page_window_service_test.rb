@@ -51,6 +51,41 @@ class PageWindowServiceTest < Minitest::Test
     assert_equal({ "edge" => "right" }, invoke_payload["args"])
   end
 
+  def test_window_object_methods_match_flet_api
+    {
+      wait_until_ready_to_show: "wait_until_ready_to_show",
+      to_front: "to_front",
+      center: "center",
+      close: "close",
+      destroy: "destroy",
+      start_dragging: "start_dragging"
+    }.each do |ruby_method, flet_method|
+      sent = []
+      page = build_page(sent)
+      window = page.window
+
+      call_id = window.public_send(ruby_method)
+      refute_nil call_id
+
+      invoke_payload = sent.reverse.map(&:last).find { |payload| payload["name"] == flet_method }
+      refute_nil invoke_payload
+      assert_nil invoke_payload["args"]
+    end
+  end
+
+  def test_window_object_start_resizing_uses_flet_edge_arg
+    sent = []
+    page = build_page(sent)
+    window = page.window
+
+    call_id = window.start_resizing("bottom_right")
+    refute_nil call_id
+
+    invoke_payload = sent.reverse.map(&:last).find { |payload| payload["name"] == "start_resizing" }
+    refute_nil invoke_payload
+    assert_equal({ "edge" => "bottom_right" }, invoke_payload["args"])
+  end
+
   private
 
   def build_page(sent)

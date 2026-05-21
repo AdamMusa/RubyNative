@@ -108,6 +108,9 @@ module RufletStudio
       when "/audio"
         page.views = [detail_view(page, "Audio Player", build_audio(page, status_text(page)),
                                   source_path: "ruflet_studio/sections_media/audio.rb")]
+      when "/audio-recorder"
+        page.views = [detail_view(page, "Audio Recorder", build_audio_recorder(page, status_text(page)),
+                                  source_path: "ruflet_studio/sections_media/audio_recorder.rb")]
       when "/video"
         page.views = [detail_view(page, "Video Player", build_video(page, status_text(page)),
                                   source_path: "ruflet_studio/sections_media/video.rb")]
@@ -141,6 +144,15 @@ module RufletStudio
       when "/connectivity"
         page.views = [detail_view(page, "Connectivity", build_connectivity(page, status_text(page)),
                                   source_path: "ruflet_studio/sections_media/connectivity.rb")]
+      when "/geolocator"
+        page.views = [detail_view(page, "Geolocator", build_geolocator(page, status_text(page)),
+                                  source_path: "ruflet_studio/sections_media/geolocator.rb")]
+      when "/permission-handler"
+        page.views = [detail_view(page, "Permission Handler", build_permission_handler(page, status_text(page)),
+                                  source_path: "ruflet_studio/sections_media/permission_handler.rb")]
+      when "/secure-storage"
+        page.views = [detail_view(page, "Secure Storage", build_secure_storage(page, status_text(page)),
+                                  source_path: "ruflet_studio/sections_media/secure_storage.rb")]
       when "/file-picker"
         page.views = [detail_view(page, "File Picker", build_file_picker(page, status_text(page)),
                                   source_path: "ruflet_studio/sections_media/file_picker.rb")]

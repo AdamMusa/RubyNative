@@ -49,6 +49,22 @@ module Ruflet
             props[:on_event] = on_event unless on_event.nil?
             super(type: TYPE, id: id, **props)
           end
+
+          %w[wait_until_ready_to_show to_front center close destroy start_dragging].each do |method_name|
+            define_method(method_name) do |timeout: 10, on_result: nil|
+              runtime_page&.invoke(self, method_name, timeout: timeout, on_result: on_result)
+            end
+          end
+
+          def start_resizing(edge, timeout: 10, on_result: nil)
+            runtime_page&.invoke(
+              self,
+              "start_resizing",
+              args: { "edge" => edge },
+              timeout: timeout,
+              on_result: on_result
+            )
+          end
         end
       end
     end
