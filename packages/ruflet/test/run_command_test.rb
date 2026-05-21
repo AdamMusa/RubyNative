@@ -94,4 +94,98 @@ class RufletCliRunCommandTest < Minitest::Test
     end
   end
 
+  def test_project_run_requires_managed_client_for_extension_services
+    runner = DummyRunner.new
+
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, "ruflet.yaml"), <<~YAML)
+        services:
+          - map
+          - audio-recorder
+      YAML
+
+      Dir.chdir(dir) do
+        assert runner.send(:project_run_requires_managed_client?)
+      end
+    end
+  end
+
+  def test_project_run_does_not_require_managed_client_without_extensions
+    runner = DummyRunner.new
+
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, "ruflet.yaml"), <<~YAML)
+        services:
+          - unknown_service
+      YAML
+
+      Dir.chdir(dir) do
+        refute runner.send(:project_run_requires_managed_client?)
+      end
+    end
+  end
+
+  def test_project_desktop_client_command_prepares_extension_client
+    runner = DummyRunner.new
+
+    Dir.mktmpdir do |dir|
+      client_dir = File.join(dir, "build", "client")
+      FileUtils.mkdir_p(client_dir)
+      File.write(File.join(dir, "ruflet.yaml"), <<~YAML)
+        services:
+          - map
+      YAML
+
+      prepare_calls = []
+      flutter_calls = []
+      runner.define_singleton_method(:host_platform_name) { "macos" }
+      runner.define_singleton_method(:ensure_ruflet_build_assets) { |verbose:| verbose == false }
+      runner.define_singleton_method(:ensure_flutter_client_dir) { |verbose:| verbose == false ? client_dir : nil }
+      runner.define_singleton_method(:ensure_flutter!) do |purpose, client_dir:|
+        flutter_calls << { purpose: purpose, client_dir: client_dir }
+        { env: { "PATH" => "/bin" }, flutter: "/fake/flutter" }
+      end
+      runner.define_singleton_method(:build_tool_env) do |env, platform, path|
+        env.merge("RUFLET_PLATFORM" => platform, "RUFLET_CLIENT_DIR" => path)
+      end
+      runner.define_singleton_method(:prepare_flutter_client) do |path, platform:, tools:, config:, self_contained:, verbose:|
+        prepare_calls << {
+          path: path,
+          platform: platform,
+          tools: tools,
+          config: config,
+          self_contained: self_contained,
+          verbose: verbose
+        }
+        true
+      end
+
+      Dir.chdir(dir) do
+        cmd = runner.send(:detect_project_desktop_client_command, "http://localhost:8550")
+
+        assert_equal [{ purpose: "run", client_dir: client_dir }], flutter_calls
+        assert_equal 1, prepare_calls.length
+        assert_equal ["map"], prepare_calls.first[:config]["services"]
+        assert_equal false, prepare_calls.first[:self_contained]
+        assert_equal false, prepare_calls.first[:verbose]
+        assert_equal "macos", prepare_calls.first[:platform]
+        assert_equal client_dir, prepare_calls.first[:path]
+        assert_equal(
+          [
+            { "PATH" => "/bin", "RUFLET_PLATFORM" => "macos", "RUFLET_CLIENT_DIR" => client_dir },
+            "/fake/flutter",
+            "run",
+            "-d",
+            "macos",
+            "--target",
+            "lib/main.server.dart",
+            "--dart-define",
+            "RUFLET_BACKEND_URL=http://localhost:8550"
+          ],
+          cmd
+        )
+      end
+    end
+  end
+
 end

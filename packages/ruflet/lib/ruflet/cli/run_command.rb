@@ -12,6 +12,7 @@ require "uri"
 require "thread"
 require "io/console"
 require "time"
+require "yaml"
 
 module Ruflet
   module CLI
@@ -285,7 +286,7 @@ module Ruflet
       end
 
       def launch_desktop_client(url)
-        cmd = detect_desktop_client_command(url)
+        cmd = detect_project_desktop_client_command(url) || detect_desktop_client_command(url)
         unless cmd
           warn "Desktop client executable not found."
           warn "Set RUFLET_CLIENT_DIR to your client path."
@@ -304,6 +305,76 @@ module Ruflet
         warn "Failed to launch desktop client: #{e.class}: #{e.message}"
         warn "Start it manually with URL: #{url}"
         []
+      end
+
+      def detect_project_desktop_client_command(url)
+        return nil unless project_run_requires_managed_client?
+        return nil unless respond_to?(:ensure_flutter_client_dir, true)
+        return nil unless respond_to?(:prepare_flutter_client, true)
+        return nil unless respond_to?(:ensure_flutter!, true)
+
+        platform = host_platform_name
+        return nil unless %w[macos windows linux].include?(platform)
+
+        ensure_ruflet_build_assets(verbose: false) if respond_to?(:ensure_ruflet_build_assets, true)
+        client_dir = ensure_flutter_client_dir(verbose: false)
+        return nil unless client_dir
+
+        config = project_run_config
+        tools = ensure_flutter!("run", client_dir: client_dir)
+        env = build_tool_env(tools[:env], platform, client_dir)
+        return nil unless prepare_flutter_client(
+          client_dir,
+          platform: platform,
+          tools: tools,
+          config: config,
+          self_contained: false,
+          verbose: false
+        )
+
+        [
+          env,
+          tools[:flutter],
+          "run",
+          "-d",
+          platform,
+          "--target",
+          "lib/main.server.dart",
+          "--dart-define",
+          "RUFLET_BACKEND_URL=#{url}"
+        ]
+      rescue StandardError => e
+        warn "Project desktop client setup failed: #{e.class}: #{e.message}"
+        nil
+      end
+
+      def project_run_requires_managed_client?
+        return false unless defined?(Ruflet::CLI::BuildCommand::CLIENT_EXTENSION_MAP)
+
+        services = Array(project_run_config["services"]).map { |value| normalize_run_extension_key(value) }.compact
+        return false if services.empty?
+
+        extension_keys = Ruflet::CLI::BuildCommand::CLIENT_EXTENSION_MAP.keys
+        (services & extension_keys).any?
+      end
+
+      def project_run_config
+        config_path = ENV["RUFLET_CONFIG"] || (File.file?("ruflet.yaml") ? "ruflet.yaml" : "ruflet.yml")
+        return {} unless File.file?(config_path)
+
+        YAML.safe_load(File.read(config_path), aliases: true) || {}
+      rescue StandardError
+        {}
+      end
+
+      def normalize_run_extension_key(value)
+        key = value.to_s.strip.downcase
+        return nil if key.empty?
+
+        key.tr!("-", "_")
+        key.gsub!(/\A(flet_)+/, "")
+        key.gsub!(/\Aservice_/, "")
+        key
       end
 
       def detect_desktop_client_command(url)
