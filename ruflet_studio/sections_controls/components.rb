@@ -252,18 +252,27 @@ module RufletStudio
                 tab(label: "Controls", icon: "widgets"),
                 tab(label: "Services", icon: "settings")
               ]),
-              tab_bar_view([
-                text(value: "Controls tab body"),
-                text(value: "Services tab body")
-              ])
+              container(
+                height: 140,
+                content: tab_bar_view([
+                  container(
+                    alignment: "center",
+                    content: text(value: "Controls tab body")
+                  ),
+                  container(
+                    alignment: "center",
+                    content: text(value: "Services tab body")
+                  )
+                ])
+              )
             ]
           ),
           on_change: ->(event) { page.update(status, value: "Tab index: #{event.value}") }
         )
       when "progress-bar"
-        progress_bar(value: 0.65, bar_height: 8, color: "#74c0fc", bgcolor: "#172033")
+        progress_bar(bar_height: 8, color: "#74c0fc", bgcolor: "#172033")
       when "progress-ring"
-        progress_ring(value: 0.4, stroke_width: 5, color: "#69db7c", bgcolor: "#172033")
+        progress_ring(stroke_width: 5, color: "#69db7c", bgcolor: "#172033")
       when "grid-view"
         container(
           height: 260,
