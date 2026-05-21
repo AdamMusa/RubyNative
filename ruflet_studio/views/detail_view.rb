@@ -2,7 +2,7 @@
 
 module RufletStudio
   module Views
-    def detail_view(page, title, content, source_path: nil, scroll: "auto", horizontal_alignment: "center", padding: 16)
+    def detail_view(page, title, content, source_path: nil, scroll: "auto", horizontal_alignment: "center", padding: 16, back_route: "/gallery")
       route = page.route
       control(:view,
         route: route,
@@ -16,7 +16,7 @@ module RufletStudio
           title: text(value: title, style: { size: 18 }),
           leading: icon_button(
             icon: Ruflet::MaterialIcons::ARROW_BACK,
-            on_click: ->(_e) { page.go("/gallery") }
+            on_click: ->(_e) { page.go(back_route) }
           ),
           actions: begin
             action = github_action(page, source_path)

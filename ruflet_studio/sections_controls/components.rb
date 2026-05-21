@@ -13,7 +13,16 @@ module RufletStudio
       { label: "Icon", slug: "icon", icon: Ruflet::MaterialIcons::STAR },
       { label: "Image", slug: "image", icon: Ruflet::MaterialIcons::IMAGE },
       { label: "Dialog", slug: "dialog", icon: Ruflet::MaterialIcons::OPEN_IN_NEW },
+      { label: "DatePicker", slug: "date-picker", icon: Ruflet::MaterialIcons[:calendar_today] },
+      { label: "DateRangePicker", slug: "date-range-picker", icon: Ruflet::MaterialIcons[:date_range] },
+      { label: "TimePicker", slug: "time-picker", icon: Ruflet::MaterialIcons[:schedule] },
       { label: "DataTable", slug: "data-table", icon: Ruflet::MaterialIcons::TABLE_CHART },
+      { label: "Dropdown", slug: "dropdown", icon: Ruflet::MaterialIcons[:arrow_drop_down_circle] },
+      { label: "Checkbox", slug: "checkbox", icon: Ruflet::MaterialIcons[:check_box] },
+      { label: "Radio", slug: "radio", icon: Ruflet::MaterialIcons[:radio_button_checked] },
+      { label: "Tabs", slug: "tabs", icon: Ruflet::MaterialIcons[:tab] },
+      { label: "ProgressBar", slug: "progress-bar", icon: Ruflet::MaterialIcons[:linear_scale] },
+      { label: "ProgressRing", slug: "progress-ring", icon: Ruflet::MaterialIcons[:donut_large] },
       { label: "ListTile", slug: "list-tile", icon: Ruflet::MaterialIcons::LIST },
       { label: "Switch", slug: "switch", icon: Ruflet::MaterialIcons::TOGGLE_ON },
       { label: "Slider", slug: "slider", icon: Ruflet::MaterialIcons::TUNE }
@@ -133,10 +142,40 @@ module RufletStudio
           title: text(value: "Dialog"),
           content: text(value: "Hello world from a Ruflet dialog."),
           actions: [
-            text_button(content: text(value: "Close"), on_click: ->(_e) { page.pop_dialog })
+            text_button(content: text(value: "Close"), on_click: ->(_e) { page.update(dialog, open: false) })
           ]
         )
-        filled_button(content: text(value: "Open dialog"), on_click: ->(_e) { page.show_dialog(dialog) })
+        page.dialog = dialog
+        filled_button(content: text(value: "Open dialog"), on_click: ->(_e) { page.update(dialog, open: true) })
+      when "date-picker"
+        dialog = date_picker(
+          value: "2026-05-21",
+          first_date: "2026-01-01",
+          last_date: "2026-12-31",
+          help_text: "Pick a date",
+          on_change: ->(event) { page.update(status, value: "Date: #{event.value}") }
+        )
+        page.dialog = dialog
+        filled_button(content: text(value: "Open date picker"), on_click: ->(_e) { page.update(dialog, open: true) })
+      when "date-range-picker"
+        dialog = date_range_picker(
+          start_value: "2026-05-01",
+          end_value: "2026-05-21",
+          first_date: "2026-01-01",
+          last_date: "2026-12-31",
+          help_text: "Pick a date range",
+          on_change: ->(event) { page.update(status, value: "Range: #{event.data.inspect}") }
+        )
+        page.dialog = dialog
+        filled_button(content: text(value: "Open range picker"), on_click: ->(_e) { page.update(dialog, open: true) })
+      when "time-picker"
+        dialog = time_picker(
+          value: "09:30",
+          help_text: "Pick a time",
+          on_change: ->(event) { page.update(status, value: "Time: #{event.value}") }
+        )
+        page.dialog = dialog
+        filled_button(content: text(value: "Open time picker"), on_click: ->(_e) { page.update(dialog, open: true) })
       when "data-table"
         data_table(
           [
@@ -153,6 +192,55 @@ module RufletStudio
           data_row_min_height: 38,
           data_row_max_height: 44
         )
+      when "dropdown"
+        dropdown(
+          [
+            dropdown_option("ruby", text: "Ruby"),
+            dropdown_option("flutter", text: "Flutter"),
+            dropdown_option("ruflet", text: "Ruflet")
+          ],
+          label: "Pick one",
+          value: "ruflet",
+          on_select: ->(event) { page.update(status, value: "Selected: #{event.value}") }
+        )
+      when "checkbox"
+        checkbox(label: "I like Ruflet", value: true, on_change: ->(event) { page.update(status, value: "Checked: #{event.value}") })
+      when "radio"
+        radio_group(
+          column(
+            spacing: 6,
+            children: [
+              radio(label: "Ruby", value: "ruby"),
+              radio(label: "Flutter", value: "flutter"),
+              radio(label: "Ruflet", value: "ruflet")
+            ]
+          ),
+          value: "ruflet",
+          on_change: ->(event) { page.update(status, value: "Radio: #{event.value}") }
+        )
+      when "tabs"
+        tabs(
+          length: 2,
+          selected_index: 0,
+          content: column(
+            spacing: 8,
+            children: [
+              tab_bar([
+                tab(label: "Controls", icon: "widgets"),
+                tab(label: "Services", icon: "settings")
+              ]),
+              tab_bar_view([
+                text(value: "Controls tab body"),
+                text(value: "Services tab body")
+              ])
+            ]
+          ),
+          on_change: ->(event) { page.update(status, value: "Tab index: #{event.value}") }
+        )
+      when "progress-bar"
+        progress_bar(value: 0.65, bar_height: 8, color: "#74c0fc", bgcolor: "#172033")
+      when "progress-ring"
+        progress_ring(value: 0.4, stroke_width: 5, color: "#69db7c", bgcolor: "#172033")
       when "list-tile"
         control(
           :list_tile,

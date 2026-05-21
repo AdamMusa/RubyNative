@@ -12,6 +12,7 @@ class ComponentsSectionTest < Minitest::Test
     assert_includes gallery, "\"/components\""
     assert_includes app, "when \"/components\""
     assert_includes app, "route.start_with?(\"/components/\")"
+    assert_includes app, "back_route: \"/components\""
     assert_includes controls, "sections_controls/components"
   end
 
@@ -22,7 +23,16 @@ class ComponentsSectionTest < Minitest::Test
       Hello
       Button
       Dialog
+      DatePicker
+      DateRangePicker
+      TimePicker
       DataTable
+      Dropdown
+      Checkbox
+      Radio
+      Tabs
+      ProgressBar
+      ProgressRing
       Container
       Row
       Column
@@ -41,9 +51,19 @@ class ComponentsSectionTest < Minitest::Test
     source = File.read(File.expand_path("../sections_controls/components.rb", __dir__))
 
     assert_includes source, "alert_dialog("
+    assert_includes source, "page.dialog = dialog"
+    assert_includes source, "page.update(dialog, open: true)"
+    assert_includes source, "page.update(dialog, open: false)"
+    assert_includes source, "date_picker("
+    assert_includes source, "date_range_picker("
+    assert_includes source, "time_picker("
     assert_includes source, "data_table("
+    assert_includes source, "dropdown("
+    assert_includes source, "checkbox("
+    assert_includes source, "radio_group("
+    assert_includes source, "tabs("
+    assert_includes source, "progress_bar("
+    assert_includes source, "progress_ring("
     assert_includes source, "filled_button("
-    assert_includes source, "page.show_dialog(dialog)"
-    assert_includes source, "page.pop_dialog"
   end
 end

@@ -44,7 +44,8 @@ module RufletStudio
       if route.start_with?("/components/")
         slug = route.split("/").last
         page.views = [detail_view(page, component_title(slug), build_component_detail(page, status_text(page), slug),
-                                  source_path: "ruflet_studio/sections_controls/components.rb")]
+                                  source_path: "ruflet_studio/sections_controls/components.rb",
+                                  back_route: "/components")]
         page.update
         return
       end
