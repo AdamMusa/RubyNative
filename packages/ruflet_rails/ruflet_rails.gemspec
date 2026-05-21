@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "lib/ruflet/version"
+version = File.read(File.expand_path("lib/ruflet/version.rb", __dir__)).match(/VERSION = "([^"]+)"/)[1]
 
 Gem::Specification.new do |spec|
   spec.name = "ruflet_rails"
-  spec.version = Ruflet::VERSION
+  spec.version = version
   spec.authors = ["AdamMusa"]
   spec.email = ["adammusa2222@gmail.com"]
 
@@ -17,6 +17,6 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "rails", ">= 7.0"
-  spec.add_dependency "ruflet", ">= 0.0.12"
-  spec.add_dependency "ruflet_core", ">= 0.0.12"
+  spec.add_dependency "ruflet", ">= 0.0.13"
+  spec.add_dependency "ruflet_core", ">= 0.0.13"
 end

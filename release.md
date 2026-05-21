@@ -2,7 +2,9 @@
 
 Ruflet is a Ruby framework inspired by Flet for building web, desktop, and mobile apps in Ruby.
 
-Current release in this repo: **0.0.10**
+Current Ruby gems release in this repo: **0.0.13** (`ruflet`, `ruflet_core`, `ruflet_server`)
+Current Rails integration release: **0.0.7**
+Current Flutter embedded Ruby runtime package: **ruby_runtime ^0.0.3** from pub.dev
 
 Class-based apps are the recommended and documented standard:
 - `class MyApp < Ruflet::App`
@@ -71,13 +73,23 @@ That keeps CLI global/tooling-level and app deps runtime-focused.
 
 ## RubyGems Release Build
 
-Build the release gems from the monorepo root:
+Build each release gem from its package directory. RubyGems validates files relative to the current package root, so do not build with a nested gemspec path from the monorepo root.
 
 ```bash
 cd /Users/macbookpro/Documents/Izeesoft/FlutterApp/ruflet
-/opt/homebrew/opt/ruby/bin/gem build packages/ruflet/ruflet.gemspec
-/opt/homebrew/opt/ruby/bin/gem build packages/ruflet_core/ruflet_core.gemspec
-/opt/homebrew/opt/ruby/bin/gem build packages/ruflet_server/ruflet_server.gemspec
+(cd packages/ruflet_core && /opt/homebrew/opt/ruby/bin/gem build ruflet_core.gemspec)
+(cd packages/ruflet && /opt/homebrew/opt/ruby/bin/gem build ruflet.gemspec)
+(cd packages/ruflet_server && /opt/homebrew/opt/ruby/bin/gem build ruflet_server.gemspec)
+(cd packages/ruflet_rails && /opt/homebrew/opt/ruby/bin/gem build ruflet_rails.gemspec)
+```
+
+Upload to RubyGems in dependency order:
+
+```bash
+(cd packages/ruflet_core && /opt/homebrew/opt/ruby/bin/gem push ruflet_core-0.0.13.gem)
+(cd packages/ruflet && /opt/homebrew/opt/ruby/bin/gem push ruflet-0.0.13.gem)
+(cd packages/ruflet_server && /opt/homebrew/opt/ruby/bin/gem push ruflet_server-0.0.13.gem)
+(cd packages/ruflet_rails && /opt/homebrew/opt/ruby/bin/gem push ruflet_rails-0.0.7.gem)
 ```
 
 ## App Style (Required in docs/examples)
