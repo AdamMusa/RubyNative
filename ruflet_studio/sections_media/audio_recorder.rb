@@ -6,6 +6,7 @@ module RufletStudio
   module SectionsMedia
     def build_audio_recorder(page, status)
       recorder = page.audio_recorder(key: "studio_audio_recorder")
+      permissions = page.permission_handler(key: "studio_audio_permissions")
       recording_path = File.join(Dir.tmpdir, "ruflet_studio_recording.wav")
 
       column(
@@ -17,8 +18,8 @@ module RufletStudio
             wrap: true,
             children: [
               text_button(content: text(value: "Permission"), on_click: ->(_e) {
-                recorder.has_permission(on_result: ->(result, error) {
-                  page.update(status, value: error ? "Recorder error: #{error}" : "Permission: #{result.inspect}")
+                permissions.get_status("microphone", on_result: ->(result, error) {
+                  page.update(status, value: error ? "Permission status error: #{error}" : "Microphone permission: #{result.inspect}")
                 })
               }),
               text_button(content: text(value: "Input devices"), on_click: ->(_e) {
@@ -28,17 +29,29 @@ module RufletStudio
               }),
               text_button(content: text(value: "Start"), on_click: ->(_e) {
                 page.update(status, value: "Requesting microphone permission...")
-                recorder.has_permission(on_result: ->(allowed, permission_error) {
+                permissions.request("microphone", on_result: ->(permission_result, permission_error) {
                   if permission_error
                     page.update(status, value: "Permission error: #{permission_error}")
-                  elsif !allowed
-                    page.update(status, value: "Microphone permission is required before recording.")
-                  else
-                    page.update(status, value: "Recording to #{recording_path}")
-                    recorder.start_recording(output_path: recording_path, configuration: { encoder: "wav" }, on_result: ->(result, error) {
-                      page.update(status, value: error ? "Start error: #{error}" : "Recording started: #{result.inspect}")
-                    })
+                    next
                   end
+
+                  unless %w[granted limited].include?(permission_result.to_s)
+                    page.update(status, value: "Microphone permission: #{permission_result.inspect}")
+                    next
+                  end
+
+                  recorder.has_permission(on_result: ->(allowed, recorder_error) {
+                    if recorder_error
+                      page.update(status, value: "Recorder permission error: #{recorder_error}")
+                    elsif !allowed
+                      page.update(status, value: "Recorder still has no microphone permission.")
+                    else
+                      page.update(status, value: "Recording to #{recording_path}")
+                      recorder.start_recording(output_path: recording_path, configuration: { encoder: "wav" }, on_result: ->(result, error) {
+                        page.update(status, value: error ? "Start error: #{error}" : "Recording started: #{result.inspect}")
+                      })
+                    end
+                  })
                 })
               }),
               text_button(content: text(value: "Stop"), on_click: ->(_e) {

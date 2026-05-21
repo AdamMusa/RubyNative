@@ -6,6 +6,8 @@ class ServiceUsageTest < Minitest::Test
   def test_audio_recorder_sample_exercises_recording_lifecycle
     source = read_studio_file("sections_media/audio_recorder.rb")
 
+    assert_includes source, "page.permission_handler"
+    assert_includes source, "permissions.request(\"microphone\""
     assert_includes source, "recorder.has_permission"
     assert_includes source, "recorder.start_recording"
     assert_includes source, "recorder.stop_recording"

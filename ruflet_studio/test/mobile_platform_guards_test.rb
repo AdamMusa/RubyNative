@@ -28,4 +28,10 @@ class MobilePlatformGuardsTest < Minitest::Test
       assert_includes source, "mobile_platform?(page)", "#{relative_path} must check platform before service use"
     end
   end
+
+  def test_barometer_does_not_start_sensor_stream_on_route_entry
+    source = File.read(File.expand_path("../sections_media/barometer.rb", __dir__))
+
+    assert_match(/page\.barometer\(\s*interval: 200,\s*enabled: false,/m, source)
+  end
 end

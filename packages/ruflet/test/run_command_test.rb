@@ -8,6 +8,7 @@ require "rbconfig"
 class RufletCliRunCommandTest < Minitest::Test
   class DummyRunner
     include Ruflet::CLI::RunCommand
+    include Ruflet::CLI::BuildCommand
   end
 
   def test_find_nearest_gemfile_walks_up_directories
@@ -186,6 +187,85 @@ class RufletCliRunCommandTest < Minitest::Test
         )
       end
     end
+  end
+
+  def test_service_extension_config_applies_audio_recorder_native_permissions
+    runner = DummyRunner.new
+
+    Dir.mktmpdir do |dir|
+      make_client_native_files(dir)
+
+      runner.send(:apply_service_extension_config, dir, { "services" => ["audio_recorder"] })
+
+      assert_includes File.read(File.join(dir, "android", "app", "src", "main", "AndroidManifest.xml")), "android.permission.RECORD_AUDIO"
+      assert_includes File.read(File.join(dir, "ios", "Runner", "Info.plist")), "NSMicrophoneUsageDescription"
+      assert_includes File.read(File.join(dir, "macos", "Runner", "Info.plist")), "NSMicrophoneUsageDescription"
+      assert_includes File.read(File.join(dir, "macos", "Runner", "DebugProfile.entitlements")), "com.apple.security.device.audio-input"
+      assert_includes File.read(File.join(dir, "macos", "Runner", "Release.entitlements")), "com.apple.security.device.audio-input"
+    end
+  end
+
+  def test_service_extension_config_keeps_microphone_permission_out_without_audio_recorder
+    runner = DummyRunner.new
+
+    Dir.mktmpdir do |dir|
+      make_client_native_files(dir)
+
+      runner.send(:apply_service_extension_config, dir, { "services" => ["map"] })
+
+      refute_includes File.read(File.join(dir, "android", "app", "src", "main", "AndroidManifest.xml")), "android.permission.RECORD_AUDIO"
+      refute_includes File.read(File.join(dir, "ios", "Runner", "Info.plist")), "NSMicrophoneUsageDescription"
+      refute_includes File.read(File.join(dir, "macos", "Runner", "Info.plist")), "NSMicrophoneUsageDescription"
+      refute_includes File.read(File.join(dir, "macos", "Runner", "DebugProfile.entitlements")), "com.apple.security.device.audio-input"
+      refute_includes File.read(File.join(dir, "macos", "Runner", "Release.entitlements")), "com.apple.security.device.audio-input"
+    end
+  end
+
+  def test_service_extension_config_removes_stale_audio_recorder_native_permissions
+    runner = DummyRunner.new
+
+    Dir.mktmpdir do |dir|
+      make_client_native_files(dir)
+      runner.send(:apply_service_extension_config, dir, { "services" => ["audio_recorder"] })
+
+      runner.send(:apply_service_extension_config, dir, { "services" => [] })
+
+      refute_includes File.read(File.join(dir, "android", "app", "src", "main", "AndroidManifest.xml")), "android.permission.RECORD_AUDIO"
+      refute_includes File.read(File.join(dir, "ios", "Runner", "Info.plist")), "NSMicrophoneUsageDescription"
+      refute_includes File.read(File.join(dir, "macos", "Runner", "Info.plist")), "NSMicrophoneUsageDescription"
+      refute_includes File.read(File.join(dir, "macos", "Runner", "DebugProfile.entitlements")), "com.apple.security.device.audio-input"
+      refute_includes File.read(File.join(dir, "macos", "Runner", "Release.entitlements")), "com.apple.security.device.audio-input"
+    end
+  end
+
+  private
+
+  def make_client_native_files(dir)
+    FileUtils.mkdir_p(File.join(dir, "android", "app", "src", "main"))
+    FileUtils.mkdir_p(File.join(dir, "ios", "Runner"))
+    FileUtils.mkdir_p(File.join(dir, "macos", "Runner"))
+    File.write(File.join(dir, "pubspec.yaml"), "name: demo\n")
+    File.write(File.join(dir, "android", "app", "src", "main", "AndroidManifest.xml"), <<~XML)
+      <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+          <application android:label="Demo"/>
+      </manifest>
+    XML
+    File.write(File.join(dir, "ios", "Runner", "Info.plist"), minimal_plist)
+    File.write(File.join(dir, "macos", "Runner", "Info.plist"), minimal_plist)
+    %w[DebugProfile Release].each do |name|
+      File.write(File.join(dir, "macos", "Runner", "#{name}.entitlements"), minimal_plist)
+    end
+  end
+
+  def minimal_plist
+    <<~PLIST
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+      </dict>
+      </plist>
+    PLIST
   end
 
 end

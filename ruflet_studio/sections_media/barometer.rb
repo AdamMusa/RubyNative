@@ -10,6 +10,7 @@ module RufletStudio
 
       barometer = page.barometer(
         interval: 200,
+        enabled: false,
         cancel_on_error: false,
         on_reading: lambda { |event|
           data = event&.data || {}

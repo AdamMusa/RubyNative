@@ -25,6 +25,21 @@ module Ruflet
         "webview" => { package: "flet_webview", alias: "ruflet_webview" }
       }.freeze
 
+      SERVICE_NATIVE_REQUIREMENTS = {
+        "audio_recorder" => {
+          android_permissions: ["android.permission.RECORD_AUDIO"],
+          ios_info: {
+            "NSMicrophoneUsageDescription" => "Microphone access is required for audio recording."
+          },
+          macos_info: {
+            "NSMicrophoneUsageDescription" => "Microphone access is required for audio recording."
+          },
+          macos_entitlements: {
+            "com.apple.security.device.audio-input" => true
+          }
+        }
+      }.freeze
+
       module_function
 
       def default_mobile_app_template(app_title:)
@@ -135,6 +150,7 @@ module Ruflet
 
         prune_client_pubspec(File.join(client_dir, "pubspec.yaml"), extension_packages)
         prune_client_main(File.join(client_dir, "lib", "main.dart"), extension_aliases)
+        apply_service_native_requirements(client_dir, extension_keys)
       end
 
       def normalize_extension_key(value)
@@ -198,6 +214,128 @@ module Ruflet
         end
 
         File.write(path, kept.join)
+      end
+
+      def apply_service_native_requirements(client_dir, extension_keys)
+        stale_keys = SERVICE_NATIVE_REQUIREMENTS.keys - extension_keys
+        remove_service_native_requirements(client_dir, stale_keys)
+
+        requirements = merge_service_native_requirements(extension_keys)
+        return if requirements.empty?
+
+        android_manifest = File.join(client_dir, "android", "app", "src", "main", "AndroidManifest.xml")
+        Array(requirements[:android_permissions]).each do |permission|
+          ensure_android_permission(android_manifest, permission)
+        end
+
+        ios_info = File.join(client_dir, "ios", "Runner", "Info.plist")
+        Hash(requirements[:ios_info]).each do |key, value|
+          ensure_plist_string(ios_info, key, value)
+        end
+
+        macos_info = File.join(client_dir, "macos", "Runner", "Info.plist")
+        Hash(requirements[:macos_info]).each do |key, value|
+          ensure_plist_string(macos_info, key, value)
+        end
+
+        %w[DebugProfile Release].each do |name|
+          entitlements_path = File.join(client_dir, "macos", "Runner", "#{name}.entitlements")
+          Hash(requirements[:macos_entitlements]).each do |key, value|
+            ensure_plist_boolean(entitlements_path, key, value)
+          end
+        end
+      end
+
+      def remove_service_native_requirements(client_dir, extension_keys)
+        requirements = merge_service_native_requirements(extension_keys)
+        return if requirements.empty?
+
+        android_manifest = File.join(client_dir, "android", "app", "src", "main", "AndroidManifest.xml")
+        Array(requirements[:android_permissions]).each do |permission|
+          remove_android_permission(android_manifest, permission)
+        end
+
+        [File.join(client_dir, "ios", "Runner", "Info.plist"), File.join(client_dir, "macos", "Runner", "Info.plist")].each do |path|
+          (Hash(requirements[:ios_info]).keys + Hash(requirements[:macos_info]).keys).uniq.each do |key|
+            remove_plist_entry(path, key)
+          end
+        end
+
+        %w[DebugProfile Release].each do |name|
+          entitlements_path = File.join(client_dir, "macos", "Runner", "#{name}.entitlements")
+          Hash(requirements[:macos_entitlements]).each_key do |key|
+            remove_plist_entry(entitlements_path, key)
+          end
+        end
+      end
+
+      def merge_service_native_requirements(extension_keys)
+        extension_keys.each_with_object({}) do |key, memo|
+          requirements = SERVICE_NATIVE_REQUIREMENTS[key]
+          next unless requirements
+
+          memo[:android_permissions] ||= []
+          memo[:android_permissions] |= Array(requirements[:android_permissions])
+          %i[ios_info macos_info macos_entitlements].each do |section|
+            memo[section] ||= {}
+            memo[section].merge!(requirements[section] || {})
+          end
+        end
+      end
+
+      def ensure_android_permission(path, permission)
+        return unless File.file?(path)
+
+        content = File.read(path)
+        return if content.include?(permission)
+
+        permission_line = %(    <uses-permission android:name="#{xml_escape(permission)}"/>\n)
+        updated = content.sub(/(<manifest\b[^>]*>\s*)/m) { "#{Regexp.last_match(1)}#{permission_line}" }
+        File.write(path, updated == content ? "#{permission_line}#{content}" : updated)
+      end
+
+      def remove_android_permission(path, permission)
+        return unless File.file?(path)
+
+        content = File.read(path)
+        updated = content.gsub(%r{^\s*<uses-permission\s+android:name="#{Regexp.escape(permission)}"\s*/>\s*\n?}, "")
+        File.write(path, updated) unless updated == content
+      end
+
+      def ensure_plist_string(path, key, value)
+        ensure_plist_entry(path, key, "<string>#{xml_escape(value)}</string>")
+      end
+
+      def ensure_plist_boolean(path, key, value)
+        ensure_plist_entry(path, key, value ? "<true/>" : "<false/>")
+      end
+
+      def ensure_plist_entry(path, key, value_xml)
+        return unless File.file?(path)
+
+        content = File.read(path)
+        return if content.include?("<key>#{key}</key>")
+
+        entry = "\t<key>#{key}</key>\n\t#{value_xml}\n"
+        updated = content.sub(%r{</dict>}, "#{entry}</dict>")
+        File.write(path, updated == content ? "#{content}\n#{entry}" : updated)
+      end
+
+      def remove_plist_entry(path, key)
+        return unless File.file?(path)
+
+        content = File.read(path)
+        updated = content.gsub(%r{\s*<key>#{Regexp.escape(key)}</key>\s*<(?:string>.*?</string|true/|false/)>\s*}m, "\n")
+        File.write(path, updated) unless updated == content
+      end
+
+      def xml_escape(value)
+        value.to_s
+             .gsub("&", "&amp;")
+             .gsub("<", "&lt;")
+             .gsub(">", "&gt;")
+             .gsub('"', "&quot;")
+             .gsub("'", "&apos;")
       end
     end
   end

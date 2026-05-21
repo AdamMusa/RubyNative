@@ -44,6 +44,30 @@ class RufletCliTemplatesTest < Minitest::Test
     end
   end
 
+  def test_full_ruflet_client_declares_audio_recorder_permissions
+    client_root = File.expand_path("../../../ruflet_client", __dir__)
+
+    assert_includes File.read(File.join(client_root, "android/app/src/main/AndroidManifest.xml")), "android.permission.RECORD_AUDIO"
+    assert_includes File.read(File.join(client_root, "ios/Runner/Info.plist")), "NSMicrophoneUsageDescription"
+    assert_includes File.read(File.join(client_root, "macos/Runner/Info.plist")), "NSMicrophoneUsageDescription"
+
+    %w[DebugProfile Release].each do |name|
+      entitlements = File.read(File.join(client_root, "macos/Runner/#{name}.entitlements"))
+
+      assert_includes entitlements, "com.apple.security.device.audio-input"
+    end
+  end
+
+  def test_full_ruflet_client_declares_desktop_file_picker_entitlements
+    client_root = File.expand_path("../../../ruflet_client", __dir__)
+
+    %w[DebugProfile Release].each do |name|
+      entitlements = File.read(File.join(client_root, "macos/Runner/#{name}.entitlements"))
+
+      assert_includes entitlements, "com.apple.security.files.user-selected.read-write"
+    end
+  end
+
   def test_embedded_runtime_shims_hash_dig
     runtime = File.read(File.expand_path("../../../ruby_runtime/shared/embedded_ruflet_runtime.rb", __dir__))
 
