@@ -1187,6 +1187,8 @@ module Ruflet
 
       visited = Set.new
       patch.each_value { |value| register_embedded_value(value, visited) }
+      patch.each { |k, v| control.props[k] = v }
+      dialog_removed = patch.key?("open") && patch["open"] == false && remove_dialog_tracking(control)
 
       patch_ops = patch.map { |k, v| [0, 0, k, serialize_patch_value(v)] }
 
@@ -1194,6 +1196,7 @@ module Ruflet
         "id" => wire_id,
         "patch" => [[0], *patch_ops]
       })
+      push_dialogs_update! if dialog_removed
 
       self
     end
@@ -1209,7 +1212,7 @@ module Ruflet
       patch = normalize_props(props || {})
       patch.each { |k, v| control.props[k] = v }
 
-      remove_dialog_tracking(control) if patch.key?("open") && patch["open"] == false
+      push_dialogs_update! if patch.key?("open") && patch["open"] == false && remove_dialog_tracking(control)
 
       self
     end
@@ -1538,8 +1541,8 @@ module Ruflet
           end_value = range_value["end_value"] || range_value[:end_value]
           control.props["start_value"] = start_value unless start_value.nil?
           control.props["end_value"] = end_value unless end_value.nil?
-          return
         end
+        return
       end
 
       return if value.nil?

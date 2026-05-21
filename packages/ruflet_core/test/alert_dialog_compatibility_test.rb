@@ -93,6 +93,33 @@ class RufletAlertDialogCompatibilityTest < Minitest::Test
     assert_equal [], sent.last[1]["patch"][1][3]
   end
 
+  def test_page_update_close_clears_dialog_tracking_before_reopening
+    sent = []
+    page = Ruflet::Page.new(
+      session_id: "s1",
+      client_details: { "route" => "/" },
+      sender: ->(action, payload) { sent << [action, payload] }
+    )
+
+    dialog = Ruflet.alert_dialog(title: Ruflet.text("Hello"))
+    page.add(Ruflet.text("Root"))
+    page.show_dialog(dialog)
+    sent.clear
+
+    page.update(dialog, open: false)
+
+    assert_equal false, dialog.props["open"]
+    assert_equal Ruflet::Protocol::ACTIONS[:patch_control], sent.last[0]
+    controls_patch = sent.last[1]["patch"].find { |op| op[2] == "controls" }
+    assert_equal [], controls_patch[3]
+
+    sent.clear
+    page.show_dialog(dialog)
+
+    controls_patch = sent.last[1]["patch"].find { |op| op[2] == "controls" }
+    assert_equal true, controls_patch[3].first["open"]
+  end
+
   def test_initial_page_patch_mounts_dialogs_before_views_like_flet
     sent = []
     page = Ruflet::Page.new(

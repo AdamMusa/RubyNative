@@ -147,7 +147,6 @@ module RufletStudio
             text_button(content: text(value: "Close"), on_click: ->(_e) { page.update(dialog, open: false) })
           ]
         )
-        page.dialog = dialog
         filled_button(content: text(value: "Open dialog"), on_click: ->(_e) { page.show_dialog(dialog) })
       when "date-picker"
         dialog = date_picker(
@@ -155,9 +154,8 @@ module RufletStudio
           first_date: "2026-01-01",
           last_date: "2026-12-31",
           help_text: "Pick a date",
-          on_change: ->(event) { page.update(status, value: "Date: #{event.value}") }
+          on_change: ->(event) { page.update(status, value: "Date: #{event.control.props["value"]}") }
         )
-        page.dialog = dialog
         filled_button(content: text(value: "Open date picker"), on_click: ->(_e) { page.show_dialog(dialog) })
       when "date-range-picker"
         dialog = date_range_picker(
@@ -166,17 +164,19 @@ module RufletStudio
           first_date: "2026-01-01",
           last_date: "2026-12-31",
           help_text: "Pick a date range",
-          on_change: ->(event) { page.update(status, value: "Range: #{event.data.inspect}") }
+          on_change: lambda do |event|
+            start_value = event.control.props["start_value"]
+            end_value = event.control.props["end_value"]
+            page.update(status, value: "Range: #{start_value} - #{end_value}")
+          end
         )
-        page.dialog = dialog
         filled_button(content: text(value: "Open range picker"), on_click: ->(_e) { page.show_dialog(dialog) })
       when "time-picker"
         dialog = time_picker(
           value: "09:30",
           help_text: "Pick a time",
-          on_change: ->(event) { page.update(status, value: "Time: #{event.value}") }
+          on_change: ->(event) { page.update(status, value: "Time: #{event.control.props["value"]}") }
         )
-        page.dialog = dialog
         filled_button(content: text(value: "Open time picker"), on_click: ->(_e) { page.show_dialog(dialog) })
       when "data-table"
         data_table(

@@ -238,4 +238,60 @@ class RufletPickerCompatibilityTest < Minitest::Test
     assert_equal true, picker_patch["open"]
     assert_equal "2026-05-21", picker_patch["value"]
   end
+
+  def test_client_close_clears_dialog_container_before_reopening_picker
+    sent = []
+    page = Ruflet::Page.new(
+      session_id: "s1",
+      client_details: { "route" => "/" },
+      sender: ->(action, payload) { sent << [action, payload] }
+    )
+
+    picker = Ruflet.time_picker(value: "09:30")
+    page.add(Ruflet.text("Root"))
+    page.show_dialog(picker)
+    sent.clear
+
+    page.apply_client_update(picker.wire_id, "open" => false, "value" => "10:15")
+
+    assert_equal false, picker.props["open"]
+    assert_equal "10:15", picker.props["value"]
+    assert_equal Ruflet::Protocol::ACTIONS[:patch_control], sent.last[0]
+    controls_patch = sent.last[1]["patch"].find { |op| op[2] == "controls" }
+    assert_equal [], controls_patch[3]
+
+    sent.clear
+    page.show_dialog(picker)
+
+    controls_patch = sent.last[1]["patch"].find { |op| op[2] == "controls" }
+    picker_patch = controls_patch[3].first
+    assert_equal "TimePicker", picker_patch["_c"]
+    assert_equal true, picker_patch["open"]
+  end
+
+  def test_date_range_picker_preserves_updated_range_when_change_payload_is_empty
+    page = Ruflet::Page.new(
+      session_id: "s1",
+      client_details: { "route" => "/" },
+      sender: ->(_action, _payload) {}
+    )
+
+    events = []
+    picker = Ruflet.date_range_picker(
+      start_value: "2026-05-01",
+      end_value: "2026-05-21",
+      on_change: ->(event) { events << [event.control.props["start_value"], event.control.props["end_value"], event.control.props["value"]] }
+    )
+    page.add(picker)
+
+    page.apply_client_update(
+      picker.wire_id,
+      "open" => false,
+      "start_value" => "2026-05-03",
+      "end_value" => "2026-05-24"
+    )
+    page.dispatch_event(target: picker.wire_id, name: "change", data: "")
+
+    assert_equal [["2026-05-03", "2026-05-24", nil]], events
+  end
 end

@@ -53,12 +53,14 @@ class ComponentsSectionTest < Minitest::Test
     source = File.read(File.expand_path("../sections_controls/components.rb", __dir__))
 
     assert_includes source, "alert_dialog("
-    assert_includes source, "page.dialog = dialog"
     assert_includes source, "page.show_dialog(dialog)"
     assert_includes source, "page.update(dialog, open: false)"
     assert_includes source, "date_picker("
     assert_includes source, "date_range_picker("
     assert_includes source, "time_picker("
+    assert_includes source, 'event.control.props["value"]'
+    assert_includes source, 'event.control.props["start_value"]'
+    assert_includes source, 'event.control.props["end_value"]'
     assert_includes source, "data_table("
     assert_includes source, "dropdown("
     assert_includes source, "checkbox("
