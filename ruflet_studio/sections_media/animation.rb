@@ -3,77 +3,68 @@
 module RufletStudio
   module SectionsMedia
     def build_animation(page, status)
-      size = 26
-      duration = 2000
-      width = 520
-      height = 280
-
-      colors = ["#4dabf7", "#69db7c", "#ffd43b", "#ff922b", "#f06595", "#7950f2"]
-      orbit = [
-        [40, 40], [140, 40], [240, 40], [340, 40], [440, 40],
-        [440, 120], [440, 200], [340, 200], [240, 200], [140, 200],
-        [40, 200], [40, 120]
-      ]
-
-      scattered = true
+      duration = 1800
       motion = animation(duration, curve: Ruflet::AnimationCurve::EASE_IN_OUT_CUBIC)
       bounce = animation(duration, curve: Ruflet::AnimationCurve::BOUNCE_OUT)
 
-      parts_controls = orbit.map.with_index do |_point, index|
-        container(
-          animate: motion,
-          animate_position: motion,
-          animate_rotation: bounce,
-          left: rand(width),
-          top: rand(height),
-          bgcolor: colors[index % colors.length],
-          width: rand((size / 2).to_i..(size * 2)),
-          height: rand((size / 2).to_i..(size * 2)),
-          border_radius: 8,
-          rotate: rand(0..90) * Math::PI / 180
-        )
-      end
-
-      canvas = stack(
-        width: width,
-        height: height,
+      expanded = false
+      word = container(
+        animate_position: motion,
         animate_scale: bounce,
         animate_opacity: motion,
-        scale: 3,
-        opacity: 0.3
+        left: 96,
+        top: 70,
+        scale: 0.82,
+        opacity: 0.72,
+        content: text(
+          value: "Ruflet",
+          style: {
+            size: 88,
+            weight: "w700",
+            color: "#9dccff"
+          }
+        )
       )
-      canvas.children.replace(parts_controls)
+
+      underline = container(
+        animate_position: motion,
+        animate_size: motion,
+        animate_opacity: motion,
+        left: 142,
+        top: 174,
+        width: 120,
+        height: 6,
+        opacity: 0.55,
+        bgcolor: "#4dabf7",
+        border_radius: 3
+      )
+
+      stage = stack(
+        width: 560,
+        height: 230,
+        children: [word, underline]
+      )
 
       btn = button(content: text(value: "Go!"))
       toggle = lambda do
-        scattered = !scattered
-        page.update(canvas, scale: scattered ? 3 : 1, opacity: scattered ? 0.3 : 1)
-        parts_controls.each_with_index do |control, idx|
-          px, py = orbit[idx]
-          if scattered
-            page.update(
-              control,
-              left: rand(width),
-              top: rand(height),
-              width: rand((size / 2).to_i..(size * 2)),
-              height: rand((size / 2).to_i..(size * 2)),
-              border_radius: 8,
-              rotate: rand(0..90) * Math::PI / 180
-            )
-          else
-            page.update(
-              control,
-              left: px,
-              top: py,
-              width: size,
-              height: size,
-              border_radius: 13,
-              rotate: 0
-            )
-          end
-        end
-        page.update(btn, content: text(value: scattered ? "Go!" : "Again!"))
-        page.update(status, value: scattered ? "Shapes scattered." : "Shapes aligned.")
+        expanded = !expanded
+        page.update(
+          word,
+          left: expanded ? 72 : 96,
+          top: expanded ? 54 : 70,
+          scale: expanded ? 1.08 : 0.82,
+          opacity: expanded ? 1.0 : 0.72
+        )
+        page.update(
+          underline,
+          left: expanded ? 96 : 142,
+          top: expanded ? 186 : 174,
+          width: expanded ? 360 : 120,
+          opacity: expanded ? 1.0 : 0.55,
+          bgcolor: expanded ? "#69db7c" : "#4dabf7"
+        )
+        page.update(btn, content: text(value: expanded ? "Again!" : "Go!"))
+        page.update(status, value: expanded ? "Ruflet animated." : "Ruflet reset.")
       end
       btn.on(:click) { |_e| toggle.call }
 
@@ -83,7 +74,8 @@ module RufletStudio
           alignment: "center",
           horizontal_alignment: "center",
           tight: true,
-          children: [canvas, btn]
+          spacing: 12,
+          children: [stage, btn]
         )
       )
     end
