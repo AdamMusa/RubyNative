@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
-require "tmpdir"
-
 module RufletStudio
   module SectionsMedia
     def build_audio_recorder(page, status)
       recorder = page.audio_recorder(key: "studio_audio_recorder")
       permissions = page.permission_handler(key: "studio_audio_permissions")
-      recording_path = File.join(Dir.tmpdir, "ruflet_studio_recording.wav")
+      recording_path = "ruflet_studio_recording.wav"
 
       column(
         spacing: 8,

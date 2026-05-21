@@ -205,6 +205,18 @@ class RufletCliRunCommandTest < Minitest::Test
     end
   end
 
+  def test_service_extension_config_applies_barometer_motion_usage_description
+    runner = DummyRunner.new
+
+    Dir.mktmpdir do |dir|
+      make_client_native_files(dir)
+
+      runner.send(:apply_service_extension_config, dir, { "services" => ["barometer"] })
+
+      assert_includes File.read(File.join(dir, "ios", "Runner", "Info.plist")), "NSMotionUsageDescription"
+    end
+  end
+
   def test_service_extension_config_keeps_microphone_permission_out_without_audio_recorder
     runner = DummyRunner.new
 
@@ -235,6 +247,19 @@ class RufletCliRunCommandTest < Minitest::Test
       refute_includes File.read(File.join(dir, "macos", "Runner", "Info.plist")), "NSMicrophoneUsageDescription"
       refute_includes File.read(File.join(dir, "macos", "Runner", "DebugProfile.entitlements")), "com.apple.security.device.audio-input"
       refute_includes File.read(File.join(dir, "macos", "Runner", "Release.entitlements")), "com.apple.security.device.audio-input"
+    end
+  end
+
+  def test_service_extension_config_removes_stale_barometer_native_permissions
+    runner = DummyRunner.new
+
+    Dir.mktmpdir do |dir|
+      make_client_native_files(dir)
+      runner.send(:apply_service_extension_config, dir, { "services" => ["barometer"] })
+
+      runner.send(:apply_service_extension_config, dir, { "services" => [] })
+
+      refute_includes File.read(File.join(dir, "ios", "Runner", "Info.plist")), "NSMotionUsageDescription"
     end
   end
 

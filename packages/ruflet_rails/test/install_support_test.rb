@@ -47,6 +47,18 @@ class InstallSupportTest < Minitest::Test
     end
   end
 
+  def test_configure_ruflet_client_applies_barometer_motion_usage_description
+    Dir.mktmpdir do |dir|
+      make_client_native_files(dir)
+      File.write(File.join(dir, "ruflet.yaml"), "services:\n  - barometer\n")
+
+      Ruflet::Rails::InstallSupport.configure_ruflet_client(dir)
+
+      client_dir = File.join(dir, "ruflet_client")
+      assert_includes File.read(File.join(client_dir, "ios", "Runner", "Info.plist")), "NSMotionUsageDescription"
+    end
+  end
+
   private
 
   def make_client_native_files(root)

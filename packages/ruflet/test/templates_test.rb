@@ -58,6 +58,12 @@ class RufletCliTemplatesTest < Minitest::Test
     end
   end
 
+  def test_full_ruflet_client_declares_barometer_motion_usage_description
+    client_root = File.expand_path("../../../ruflet_client", __dir__)
+
+    assert_includes File.read(File.join(client_root, "ios/Runner/Info.plist")), "NSMotionUsageDescription"
+  end
+
   def test_full_ruflet_client_declares_desktop_file_picker_entitlements
     client_root = File.expand_path("../../../ruflet_client", __dir__)
 

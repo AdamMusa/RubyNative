@@ -8,6 +8,7 @@ class ServiceUsageTest < Minitest::Test
 
     assert_includes source, "page.permission_handler"
     assert_includes source, "permissions.request(\"microphone\""
+    assert_includes source, "recording_path = \"ruflet_studio_recording.wav\""
     assert_includes source, "recorder.has_permission"
     assert_includes source, "recorder.start_recording"
     assert_includes source, "recorder.stop_recording"

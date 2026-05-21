@@ -41,7 +41,7 @@ class RufletAudioCompatibilityTest < Minitest::Test
     assert audio.has_handler?(:state_change)
   end
 
-  def test_page_audio_helper_and_release_method_use_flet_payload_shape
+  def test_page_audio_helper_and_methods_use_flet_payload_shape
     messages = []
     page = Ruflet::Page.new(
       session_id: "s1",
@@ -51,11 +51,21 @@ class RufletAudioCompatibilityTest < Minitest::Test
     audio = page.audio(src: "assets/intro.mp3")
     messages.clear
 
+    audio.play
+    audio.play(position: 2000)
+    audio.seek(3000)
     audio.release
 
-    invoke_payload = messages.reverse.map(&:last).find { |payload| payload["name"] == "release" }
-    refute_nil invoke_payload
-    assert_equal audio.wire_id, invoke_payload["control_id"]
-    assert_nil invoke_payload["args"]
+    payloads = messages.map(&:last)
+    default_play = payloads.find { |payload| payload["name"] == "play" }
+    positioned_play = payloads.select { |payload| payload["name"] == "play" }.last
+    seek = payloads.find { |payload| payload["name"] == "seek" }
+    release = payloads.find { |payload| payload["name"] == "release" }
+
+    assert_equal audio.wire_id, default_play["control_id"]
+    assert_equal({ "position" => 0 }, default_play["args"])
+    assert_equal({ "position" => 2000 }, positioned_play["args"])
+    assert_equal({ "position" => 3000 }, seek["args"])
+    assert_nil release["args"]
   end
 end

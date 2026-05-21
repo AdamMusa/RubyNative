@@ -37,6 +37,11 @@ module Ruflet
           macos_entitlements: {
             "com.apple.security.device.audio-input" => true
           }
+        },
+        "barometer" => {
+          ios_info: {
+            "NSMotionUsageDescription" => "Motion access is required for barometer readings."
+          }
         }
       }.freeze
 
