@@ -68,6 +68,17 @@ class RufletCliTemplatesTest < Minitest::Test
     end
   end
 
+  def test_full_ruflet_client_registers_audio_recorder_extension
+    client_root = File.expand_path("../../../ruflet_client", __dir__)
+
+    %w[main.dart bootstrap.dart].each do |name|
+      source = File.read(File.join(client_root, "lib", name))
+
+      assert_includes source, "package:flet_audio_recorder/flet_audio_recorder.dart"
+      assert_includes source, "flet_audio_recorder.Extension(),"
+    end
+  end
+
   def test_embedded_runtime_shims_hash_dig
     runtime = File.read(File.expand_path("../../../ruby_runtime/shared/embedded_ruflet_runtime.rb", __dir__))
 
