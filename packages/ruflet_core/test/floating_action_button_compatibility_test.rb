@@ -78,7 +78,8 @@ class RufletFloatingActionButtonCompatibilityTest < Minitest::Test
 
     page.add(Ruflet.text("Body"), floating_action_button: Ruflet.floating_action_button(icon: "add"))
 
-    view = sent.last[1]["patch"][1][3].first
+    views_patch = sent.last[1]["patch"].find { |op| op[2] == "views" }
+    view = views_patch[3].first
     assert_equal "FloatingActionButton", view["floating_action_button"]["_c"]
     assert_equal Ruflet::MaterialIconLookup.codepoint_for("add"), view["floating_action_button"]["icon"]
   end

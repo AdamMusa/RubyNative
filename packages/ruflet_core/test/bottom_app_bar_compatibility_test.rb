@@ -60,7 +60,8 @@ class RufletBottomAppBarCompatibilityTest < Minitest::Test
 
     page.add(Ruflet.text("Body"), bottom_appbar: Ruflet.bottom_app_bar(Ruflet.text("Actions")))
 
-    view = sent.last[1]["patch"][1][3].first
+    views_patch = sent.last[1]["patch"].find { |op| op[2] == "views" }
+    view = views_patch[3].first
     assert_equal "BottomAppBar", view["bottom_appbar"]["_c"]
     assert_equal "Text", view["bottom_appbar"]["content"]["_c"]
   end
@@ -77,7 +78,8 @@ class RufletBottomAppBarCompatibilityTest < Minitest::Test
     page.bottom_appbar = Ruflet.bottom_app_bar(Ruflet.text("Actions"))
     page.update
 
-    view = sent.last[1]["patch"][1][3].first
+    views_patch = sent.last[1]["patch"].find { |op| op[2] == "views" }
+    view = views_patch[3].first
     assert_equal "BottomAppBar", view["bottom_appbar"]["_c"]
   end
 end

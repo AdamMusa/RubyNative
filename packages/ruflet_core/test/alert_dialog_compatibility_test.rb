@@ -92,4 +92,21 @@ class RufletAlertDialogCompatibilityTest < Minitest::Test
     assert_equal [["dismiss", true]], dismissed
     assert_equal [], sent.last[1]["patch"][1][3]
   end
+
+  def test_initial_page_patch_mounts_dialogs_before_views_like_flet
+    sent = []
+    page = Ruflet::Page.new(
+      session_id: "s1",
+      client_details: { "route" => "/" },
+      sender: ->(action, payload) { sent << [action, payload] }
+    )
+
+    page.add(Ruflet.text("Root"))
+
+    patch_keys = sent.last[1]["patch"].drop(1).map { |op| op[2] }
+
+    refute_nil patch_keys.index("_dialogs")
+    refute_nil patch_keys.index("_overlay")
+    assert_operator patch_keys.index("_dialogs"), :<, patch_keys.index("views")
+  end
 end
