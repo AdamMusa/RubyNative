@@ -36,7 +36,6 @@ services:
   - shake_detector
   - share
   - storage_paths
-  - tester
   - user_accelerometer
   - video
   - webview

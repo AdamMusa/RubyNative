@@ -23,6 +23,7 @@ class PageAudioRecorderServiceTest < Minitest::Test
     service = page.audio_recorder
 
     service.start_recording(output_path: "/tmp/a.wav", configuration: { encoder: "wav" }, upload: { url: "/upload" })
+    service.start_recording(output_path: "/tmp/b.wav")
     service.is_supported_encoder("wav")
     service.stop_recording
     service.cancel_recording
@@ -35,6 +36,13 @@ class PageAudioRecorderServiceTest < Minitest::Test
         "upload" => { "url" => "/upload" }
       },
       payloads.find { |payload| payload["name"] == "start_recording" }["args"]
+    )
+    assert_equal(
+      {
+        "output_path" => "/tmp/b.wav",
+        "configuration" => {}
+      },
+      payloads.select { |payload| payload["name"] == "start_recording" }.last["args"]
     )
     assert_equal({ "encoder" => "wav" }, payloads.find { |payload| payload["name"] == "is_supported_encoder" }["args"])
     assert_nil payloads.find { |payload| payload["name"] == "stop_recording" }["args"]

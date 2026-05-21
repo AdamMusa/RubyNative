@@ -4,14 +4,37 @@ module Ruflet
   module UI
     module Controls
       module RufletComponents
+        module MapValueNormalizer
+          private
+
+          def normalize_map_coordinate(value)
+            case value
+            when Array
+              if value.length == 2 && value.all? { |item| item.is_a?(Numeric) }
+                { "latitude" => value[0], "longitude" => value[1] }
+              else
+                value.map { |item| normalize_map_coordinate(item) }
+              end
+            when Hash
+              value.transform_keys(&:to_s).each_with_object({}) do |(key, item), result|
+                result[key] = normalize_map_coordinate(item)
+              end
+            else
+              value.respond_to?(:to_h) ? normalize_map_coordinate(value.to_h) : value
+            end
+          end
+        end
+
         class MapControl < Ruflet::Control
+          include MapValueNormalizer
+
           TYPE = "map".freeze
           WIRE = "Map".freeze
 
           def initialize(id: nil, layers: nil, initial_center: nil, initial_zoom: nil, min_zoom: nil, max_zoom: nil, interaction_configuration: nil, keep_alive: nil, bgcolor: nil, data: nil, expand: nil, height: nil, key: nil, visible: nil, width: nil, on_init: nil, on_long_press: nil, on_position_change: nil, on_secondary_tap: nil, on_tap: nil)
             props = {}
             props[:layers] = layers unless layers.nil?
-            props[:initial_center] = initial_center unless initial_center.nil?
+            props[:initial_center] = normalize_map_coordinate(initial_center) unless initial_center.nil?
             props[:initial_zoom] = initial_zoom unless initial_zoom.nil?
             props[:min_zoom] = min_zoom unless min_zoom.nil?
             props[:max_zoom] = max_zoom unless max_zoom.nil?
@@ -32,12 +55,52 @@ module Ruflet
             super(type: TYPE, id: id, **props)
           end
 
-          def center_on(coordinates, zoom: nil, timeout: 10, on_result: nil)
-            invoke_map("center_on", args: compact_args("coordinates" => coordinates, "zoom" => zoom), timeout: timeout, on_result: on_result)
+          def center_on(point = nil, coordinates: nil, zoom: nil, duration: nil, curve: nil, cancel_ongoing_animations: nil, timeout: 10, on_result: nil)
+            point ||= coordinates
+            invoke_map(
+              "center_on",
+              args: compact_args(
+                "point" => normalize_map_coordinate(point),
+                "zoom" => zoom,
+                "duration" => duration,
+                "curve" => curve,
+                "cancel_ongoing_animations" => cancel_ongoing_animations
+              ),
+              timeout: timeout,
+              on_result: on_result
+            )
           end
 
-          def move_to(coordinates, zoom: nil, timeout: 10, on_result: nil)
-            invoke_map("move_to", args: compact_args("coordinates" => coordinates, "zoom" => zoom), timeout: timeout, on_result: on_result)
+          def move_to(destination = nil, coordinates: nil, zoom: nil, rotation: nil, offset: nil, duration: nil, curve: nil, cancel_ongoing_animations: nil, timeout: 10, on_result: nil)
+            destination ||= coordinates
+            invoke_map(
+              "move_to",
+              args: compact_args(
+                "destination" => normalize_map_coordinate(destination),
+                "zoom" => zoom,
+                "rotation" => rotation,
+                "offset" => offset,
+                "duration" => duration,
+                "curve" => curve,
+                "cancel_ongoing_animations" => cancel_ongoing_animations
+              ),
+              timeout: timeout,
+              on_result: on_result
+            )
+          end
+
+          def zoom_to(zoom, duration: nil, curve: nil, cancel_ongoing_animations: nil, timeout: 10, on_result: nil)
+            invoke_map(
+              "zoom_to",
+              args: compact_args(
+                "zoom" => zoom,
+                "duration" => duration,
+                "curve" => curve,
+                "cancel_ongoing_animations" => cancel_ongoing_animations
+              ),
+              timeout: timeout,
+              on_result: on_result
+            )
           end
 
           def zoom_in(delta: nil, timeout: 10, on_result: nil)
@@ -118,12 +181,14 @@ module Ruflet
         end
 
         class MarkerControl < Ruflet::Control
+          include MapValueNormalizer
+
           TYPE = "marker".freeze
           WIRE = "Marker".freeze
 
           def initialize(id: nil, coordinates: nil, content: nil, height: nil, rotate: nil, width: nil, alignment: nil)
             props = {}
-            props[:coordinates] = coordinates unless coordinates.nil?
+            props[:coordinates] = normalize_map_coordinate(coordinates) unless coordinates.nil?
             props[:content] = content unless content.nil?
             props[:height] = height unless height.nil?
             props[:rotate] = rotate unless rotate.nil?
@@ -146,12 +211,14 @@ module Ruflet
         end
 
         class CircleMarkerControl < Ruflet::Control
+          include MapValueNormalizer
+
           TYPE = "circlemarker".freeze
           WIRE = "CircleMarker".freeze
 
           def initialize(id: nil, coordinates: nil, radius: nil, color: nil, border_color: nil, border_stroke_width: nil, use_radius_in_meter: nil)
             props = {}
-            props[:coordinates] = coordinates unless coordinates.nil?
+            props[:coordinates] = normalize_map_coordinate(coordinates) unless coordinates.nil?
             props[:radius] = radius unless radius.nil?
             props[:color] = color unless color.nil?
             props[:border_color] = border_color unless border_color.nil?
@@ -174,12 +241,14 @@ module Ruflet
         end
 
         class PolylineMarkerControl < Ruflet::Control
+          include MapValueNormalizer
+
           TYPE = "polylinemarker".freeze
           WIRE = "PolylineMarker".freeze
 
           def initialize(id: nil, coordinates: nil, color: nil, stroke_width: nil, border_color: nil, border_stroke_width: nil, gradient_colors: nil, stroke_cap: nil, stroke_join: nil)
             props = {}
-            props[:coordinates] = coordinates unless coordinates.nil?
+            props[:coordinates] = normalize_map_coordinate(coordinates) unless coordinates.nil?
             props[:color] = color unless color.nil?
             props[:stroke_width] = stroke_width unless stroke_width.nil?
             props[:border_color] = border_color unless border_color.nil?
@@ -204,12 +273,14 @@ module Ruflet
         end
 
         class PolygonMarkerControl < Ruflet::Control
+          include MapValueNormalizer
+
           TYPE = "polygonmarker".freeze
           WIRE = "PolygonMarker".freeze
 
           def initialize(id: nil, coordinates: nil, color: nil, border_color: nil, border_stroke_width: nil, disable_holes_border: nil, label: nil)
             props = {}
-            props[:coordinates] = coordinates unless coordinates.nil?
+            props[:coordinates] = normalize_map_coordinate(coordinates) unless coordinates.nil?
             props[:color] = color unless color.nil?
             props[:border_color] = border_color unless border_color.nil?
             props[:border_stroke_width] = border_stroke_width unless border_stroke_width.nil?

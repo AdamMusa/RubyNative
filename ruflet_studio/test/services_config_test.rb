@@ -29,7 +29,6 @@ class ServicesConfigTest < Minitest::Test
     "shake_detector" => /page\.shake_detector\(/,
     "share" => /page\.share(?:\b|_)/,
     "storage_paths" => /page\.storage_paths\b/,
-    "tester" => /page\.tester\(/,
     "user_accelerometer" => /page\.user_accelerometer\(/,
     "video" => /\bvideo\(/,
     "webview" => /\bweb_view\(/,

@@ -75,8 +75,7 @@ module RufletStudio
         tile(page, Ruflet::MaterialIcons[:lock], "Secure Storage", "/secure-storage"),
         tile(page, Ruflet::MaterialIcons::PHOTO_CAMERA, "Camera", "/camera"),
         tile(page, Ruflet::MaterialIcons::ATTACH_FILE, "File Picker", "/file-picker"),
-        tile(page, Ruflet::MaterialIcons::VIEW_MODULE, "Window", "/window"),
-        tile(page, Ruflet::MaterialIcons::CHECK, "Tester", "/tester")
+        tile(page, Ruflet::MaterialIcons::VIEW_MODULE, "Window", "/window")
       ]
     end
 

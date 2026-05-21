@@ -8,8 +8,11 @@ module RufletStudio
         [
           tile_layer(
             url_template: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-            user_agent_package_name: "com.example.ruflet_studio",
-            attribution: simple_attribution(text: "OpenStreetMap contributors")
+            user_agent_package_name: "com.example.ruflet_studio"
+          ),
+          simple_attribution(
+            text: "OpenStreetMap contributors",
+            alignment: "bottom_right"
           ),
           marker_layer(
             [

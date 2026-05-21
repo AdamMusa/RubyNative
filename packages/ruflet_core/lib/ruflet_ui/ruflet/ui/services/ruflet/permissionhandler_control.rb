@@ -44,6 +44,8 @@ module Ruflet
           end
 
           def normalize_service_value(value)
+            return value.to_s if value.is_a?(Symbol)
+
             value.respond_to?(:to_h) ? value.to_h.transform_keys(&:to_s) : value
           end
         end

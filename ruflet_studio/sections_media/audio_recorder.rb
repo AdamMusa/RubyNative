@@ -6,7 +6,7 @@ module RufletStudio
   module SectionsMedia
     def build_audio_recorder(page, status)
       recorder = page.audio_recorder(key: "studio_audio_recorder")
-      recording_path = File.join(Dir.tmpdir, "ruflet_studio_recording.m4a")
+      recording_path = File.join(Dir.tmpdir, "ruflet_studio_recording.wav")
 
       column(
         spacing: 8,
@@ -35,7 +35,7 @@ module RufletStudio
                     page.update(status, value: "Microphone permission is required before recording.")
                   else
                     page.update(status, value: "Recording to #{recording_path}")
-                    recorder.start_recording(output_path: recording_path, on_result: ->(result, error) {
+                    recorder.start_recording(output_path: recording_path, configuration: { encoder: "wav" }, on_result: ->(result, error) {
                       page.update(status, value: error ? "Start error: #{error}" : "Recording started: #{result.inspect}")
                     })
                   end

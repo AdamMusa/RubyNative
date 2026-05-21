@@ -26,7 +26,6 @@ require_relative "sections_media/webview"
 require_relative "sections_media/battery"
 require_relative "sections_media/screen_brightness"
 require_relative "sections_media/window"
-require_relative "sections_media/tester"
 require_relative "sections_media/permission_handler"
 require_relative "sections_media/secure_storage"
 

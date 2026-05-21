@@ -45,6 +45,13 @@ class PageSecureStorageServiceTest < Minitest::Test
     assert_nil payloads.find { |payload| payload["name"] == "get_availability" }["args"]
   end
 
+  def test_secure_storage_rejects_nil_values_like_flet
+    service = build_page([]).secure_storage
+
+    error = assert_raises(ArgumentError) { service.set("token", nil) }
+    assert_match(/value/i, error.message)
+  end
+
   private
 
   def build_page(sent)

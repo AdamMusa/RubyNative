@@ -23,6 +23,8 @@ module Ruflet
           end
 
           def set(key, value, **options)
+            raise ArgumentError, "value must not be nil" if value.nil?
+
             invoke_secure_storage("set", args: option_args(options).merge("key" => key, "value" => value), **invoke_options(options))
           end
 

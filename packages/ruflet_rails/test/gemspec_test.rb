@@ -7,9 +7,9 @@ class RufletRailsGemspecTest < Minitest::Test
     gem_root = File.expand_path("..", __dir__)
     spec = Dir.chdir(gem_root) { Gem::Specification.load("ruflet_rails.gemspec") }
 
-    assert_equal "0.0.7", spec.version.to_s
-    assert_dependency spec, "ruflet_core", ">= 0.0.13"
-    assert_dependency spec, "ruflet", ">= 0.0.13"
+    assert_equal "0.0.8", spec.version.to_s
+    assert_dependency spec, "ruflet_core", ">= 0.0.14"
+    assert_dependency spec, "ruflet", ">= 0.0.14"
   end
 
   private

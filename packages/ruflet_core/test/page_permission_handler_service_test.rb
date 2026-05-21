@@ -21,8 +21,8 @@ class PagePermissionHandlerServiceTest < Minitest::Test
     page = build_page(sent)
     service = page.permission_handler
 
-    service.get_status("microphone")
-    service.request("camera")
+    service.get_status(:microphone)
+    service.request(:camera)
     service.open_app_settings
 
     payloads = sent.map(&:last)

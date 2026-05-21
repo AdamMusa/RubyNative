@@ -65,7 +65,7 @@ class MapCompatibilityTest < Minitest::Test
     patch = map.to_patch
 
     assert_equal "Map", patch["_c"]
-    assert_equal [51.5, -0.09], patch["initial_center"]
+    assert_equal({ "latitude" => 51.5, "longitude" => -0.09 }, patch["initial_center"])
     assert_equal 13, patch["initial_zoom"]
     assert_equal 2, patch["min_zoom"]
     assert_equal 18, patch["max_zoom"]
@@ -78,8 +78,16 @@ class MapCompatibilityTest < Minitest::Test
     assert_equal "https://tile.openstreetmap.org/{z}/{x}/{y}.png", layers[0]["url_template"]
     assert_equal "com.example.ruflet", layers[0]["user_agent_package_name"]
     assert_equal "Marker", layers[1].fetch("markers").first["_c"]
+    assert_equal({ "latitude" => 51.5, "longitude" => -0.09 }, layers[1].fetch("markers").first["coordinates"])
     assert_equal "CircleMarker", layers[2].fetch("circles").first["_c"]
     assert_equal "PolylineMarker", layers[3].fetch("polylines").first["_c"]
+    assert_equal(
+      [
+        { "latitude" => 51.5, "longitude" => -0.09 },
+        { "latitude" => 51.51, "longitude" => -0.1 }
+      ],
+      layers[3].fetch("polylines").first["coordinates"]
+    )
     assert_equal "PolygonMarker", layers[4].fetch("polygons").first["_c"]
   end
 
@@ -115,7 +123,8 @@ class MapCompatibilityTest < Minitest::Test
     callback = ->(_result, _error) {}
 
     map.center_on([51.5, -0.09], zoom: 12, timeout: 3, on_result: callback)
-    map.move_to([52.0, -0.12], zoom: 14)
+    map.move_to([52.0, -0.12], zoom: 14, rotation: 10, offset: { x: 1, y: 2 })
+    map.zoom_to(5, duration: 250, curve: "ease_in", cancel_ongoing_animations: true)
     map.zoom_in(delta: 2)
     map.zoom_out(delta: 1)
     map.rotate_from(45)
@@ -123,8 +132,9 @@ class MapCompatibilityTest < Minitest::Test
 
     assert_equal(
       [
-        [map, "center_on", { "coordinates" => [51.5, -0.09], "zoom" => 12 }, 3, callback],
-        [map, "move_to", { "coordinates" => [52.0, -0.12], "zoom" => 14 }, 10, nil],
+        [map, "center_on", { "point" => { "latitude" => 51.5, "longitude" => -0.09 }, "zoom" => 12 }, 3, callback],
+        [map, "move_to", { "destination" => { "latitude" => 52.0, "longitude" => -0.12 }, "zoom" => 14, "rotation" => 10, "offset" => { "x" => 1, "y" => 2 } }, 10, nil],
+        [map, "zoom_to", { "zoom" => 5, "duration" => 250, "curve" => "ease_in", "cancel_ongoing_animations" => true }, 10, nil],
         [map, "zoom_in", { "delta" => 2 }, 10, nil],
         [map, "zoom_out", { "delta" => 1 }, 10, nil],
         [map, "rotate_from", { "degree" => 45 }, 10, nil],

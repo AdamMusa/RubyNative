@@ -177,9 +177,6 @@ module RufletStudio
       when "/window"
         page.views = [detail_view(page, "Window", build_window(page, status_text(page)),
                                   source_path: "ruflet_studio/sections_media/window.rb")]
-      when "/tester"
-        page.views = [detail_view(page, "Tester", build_tester(page, status_text(page)),
-                                  source_path: "ruflet_studio/sections_media/tester.rb")]
       else
         page.views = [gallery_view(page)]
       end

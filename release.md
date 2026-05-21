@@ -2,8 +2,8 @@
 
 Ruflet is a Ruby framework inspired by Flet for building web, desktop, and mobile apps in Ruby.
 
-Current Ruby gems release in this repo: **0.0.13** (`ruflet`, `ruflet_core`, `ruflet_server`)
-Current Rails integration release: **0.0.7**
+Current Ruby gems release in this repo: **0.0.14** (`ruflet`, `ruflet_core`, `ruflet_server`)
+Current Rails integration release: **0.0.8**
 Current Flutter embedded Ruby runtime package: **ruby_runtime ^0.0.3** from pub.dev
 
 Class-based apps are the recommended and documented standard:
@@ -86,10 +86,10 @@ cd /Users/macbookpro/Documents/Izeesoft/FlutterApp/ruflet
 Upload to RubyGems in dependency order:
 
 ```bash
-(cd packages/ruflet_core && /opt/homebrew/opt/ruby/bin/gem push ruflet_core-0.0.13.gem)
-(cd packages/ruflet && /opt/homebrew/opt/ruby/bin/gem push ruflet-0.0.13.gem)
-(cd packages/ruflet_server && /opt/homebrew/opt/ruby/bin/gem push ruflet_server-0.0.13.gem)
-(cd packages/ruflet_rails && /opt/homebrew/opt/ruby/bin/gem push ruflet_rails-0.0.7.gem)
+(cd packages/ruflet_core && /opt/homebrew/opt/ruby/bin/gem push ruflet_core-0.0.14.gem)
+(cd packages/ruflet && /opt/homebrew/opt/ruby/bin/gem push ruflet-0.0.14.gem)
+(cd packages/ruflet_server && /opt/homebrew/opt/ruby/bin/gem push ruflet_server-0.0.14.gem)
+(cd packages/ruflet_rails && /opt/homebrew/opt/ruby/bin/gem push ruflet_rails-0.0.8.gem)
 ```
 
 ## App Style (Required in docs/examples)
