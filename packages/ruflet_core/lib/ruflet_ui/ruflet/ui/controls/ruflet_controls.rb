@@ -61,6 +61,7 @@ require_relative "materials/filledtonaliconbutton_control"
 require_relative "materials/floatingactionbutton_control"
 require_relative "materials/iconbutton_control"
 require_relative "materials/listtile_control"
+require_relative "materials/map_controls"
 require_relative "materials/menubar_control"
 require_relative "materials/menuitembutton_control"
 require_relative "materials/navigationbar_control"
@@ -324,6 +325,26 @@ module Ruflet
           "list_view" => RufletComponents::ListViewControl,
           "listtile" => RufletComponents::ListTileControl,
           "listview" => RufletComponents::ListViewControl,
+          "map" => RufletComponents::MapControl,
+          "tile_layer" => RufletComponents::TileLayerControl,
+          "tilelayer" => RufletComponents::TileLayerControl,
+          "marker_layer" => RufletComponents::MarkerLayerControl,
+          "markerlayer" => RufletComponents::MarkerLayerControl,
+          "marker" => RufletComponents::MarkerControl,
+          "circle_layer" => RufletComponents::CircleLayerControl,
+          "circlelayer" => RufletComponents::CircleLayerControl,
+          "circle_marker" => RufletComponents::CircleMarkerControl,
+          "circlemarker" => RufletComponents::CircleMarkerControl,
+          "polyline_layer" => RufletComponents::PolylineLayerControl,
+          "polylinelayer" => RufletComponents::PolylineLayerControl,
+          "polyline_marker" => RufletComponents::PolylineMarkerControl,
+          "polylinemarker" => RufletComponents::PolylineMarkerControl,
+          "polygon_layer" => RufletComponents::PolygonLayerControl,
+          "polygonlayer" => RufletComponents::PolygonLayerControl,
+          "polygon_marker" => RufletComponents::PolygonMarkerControl,
+          "polygonmarker" => RufletComponents::PolygonMarkerControl,
+          "simple_attribution" => RufletComponents::SimpleAttributionControl,
+          "simpleattribution" => RufletComponents::SimpleAttributionControl,
           "markdown" => RufletComponents::MarkdownControl,
           "menu_bar" => RufletComponents::MenuBarControl,
           "menu_item_button" => RufletComponents::MenuItemButtonControl,

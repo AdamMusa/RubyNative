@@ -18,6 +18,7 @@ class ServicesConfigTest < Minitest::Test
     "file_picker" => /page\.file_picker\b/,
     "flashlight" => /page\.service\(\s*:flashlight/,
     "geolocator" => /page\.geolocator\(/,
+    "map" => /\bmap\(/,
     "gyroscope" => /page\.gyroscope\(/,
     "magnetometer" => /page\.magnetometer\(/,
     "permission_handler" => /page\.permission_handler\(/,

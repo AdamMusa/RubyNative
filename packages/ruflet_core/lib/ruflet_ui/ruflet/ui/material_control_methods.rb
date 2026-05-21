@@ -139,6 +139,50 @@ module Ruflet
       end
       def list_tile(**props) = build_widget(:listtile, **props)
       def listtile(**props) = list_tile(**props)
+      def map(layers = nil, **props)
+        mapped = props.dup
+        mapped[:layers] = layers unless layers.nil?
+        build_widget(:map, **mapped)
+      end
+      def tile_layer(**props) = build_widget(:tilelayer, **props)
+      def tilelayer(**props) = tile_layer(**props)
+      def marker_layer(markers = nil, **props)
+        mapped = props.dup
+        mapped[:markers] = markers unless markers.nil?
+        build_widget(:markerlayer, **mapped)
+      end
+      def markerlayer(markers = nil, **props) = marker_layer(markers, **props)
+      def marker(content = nil, **props)
+        mapped = props.dup
+        mapped[:content] = content unless content.nil?
+        build_widget(:marker, **mapped)
+      end
+      def circle_layer(circles = nil, **props)
+        mapped = props.dup
+        mapped[:circles] = circles unless circles.nil?
+        build_widget(:circlelayer, **mapped)
+      end
+      def circlelayer(circles = nil, **props) = circle_layer(circles, **props)
+      def circle_marker(**props) = build_widget(:circlemarker, **props)
+      def circlemarker(**props) = circle_marker(**props)
+      def polyline_layer(polylines = nil, **props)
+        mapped = props.dup
+        mapped[:polylines] = polylines unless polylines.nil?
+        build_widget(:polylinelayer, **mapped)
+      end
+      def polylinelayer(polylines = nil, **props) = polyline_layer(polylines, **props)
+      def polyline_marker(**props) = build_widget(:polylinemarker, **props)
+      def polylinemarker(**props) = polyline_marker(**props)
+      def polygon_layer(polygons = nil, **props)
+        mapped = props.dup
+        mapped[:polygons] = polygons unless polygons.nil?
+        build_widget(:polygonlayer, **mapped)
+      end
+      def polygonlayer(polygons = nil, **props) = polygon_layer(polygons, **props)
+      def polygon_marker(**props) = build_widget(:polygonmarker, **props)
+      def polygonmarker(**props) = polygon_marker(**props)
+      def simple_attribution(**props) = build_widget(:simpleattribution, **props)
+      def simpleattribution(**props) = simple_attribution(**props)
       def list_view(children = nil, **props)
         mapped = props.dup
         mapped[:children] = children unless children.nil?

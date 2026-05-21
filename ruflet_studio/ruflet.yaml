@@ -26,6 +26,7 @@ services:
   - flashlight
   - geolocator
   - gyroscope
+  - map
   - magnetometer
   - permission_handler
   - screen_brightness

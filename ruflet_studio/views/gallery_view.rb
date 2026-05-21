@@ -69,6 +69,7 @@ module RufletStudio
         tile(page, Ruflet::MaterialIcons::FLASH_ON, "Flashlight", "/flashlight"),
         tile(page, Ruflet::MaterialIcons::WIFI, "Connectivity", "/connectivity"),
         tile(page, Ruflet::MaterialIcons[:location_on], "Geolocator", "/geolocator"),
+        tile(page, Ruflet::MaterialIcons::MAP, "Map", "/map"),
         tile(page, Ruflet::MaterialIcons[:admin_panel_settings], "Permission Handler", "/permission-handler"),
         tile(page, Ruflet::MaterialIcons[:lock], "Secure Storage", "/secure-storage"),
         tile(page, Ruflet::MaterialIcons::PHOTO_CAMERA, "Camera", "/camera"),

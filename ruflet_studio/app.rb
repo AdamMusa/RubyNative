@@ -147,6 +147,12 @@ module RufletStudio
       when "/geolocator"
         page.views = [detail_view(page, "Geolocator", build_geolocator(page, status_text(page)),
                                   source_path: "ruflet_studio/sections_media/geolocator.rb")]
+      when "/map"
+        page.views = [detail_view(page, "Map", build_map(page, status_text(page)),
+                                  source_path: "ruflet_studio/sections_media/map.rb",
+                                  scroll: nil,
+                                  horizontal_alignment: "stretch",
+                                  padding: 0)]
       when "/permission-handler"
         page.views = [detail_view(page, "Permission Handler", build_permission_handler(page, status_text(page)),
                                   source_path: "ruflet_studio/sections_media/permission_handler.rb")]
