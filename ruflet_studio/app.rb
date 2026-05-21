@@ -57,6 +57,9 @@ module RufletStudio
       when "/calculator"
         page.views = [detail_view(page, "Calculator", build_calculator(page, status_text(page)),
                                   source_path: "ruflet_studio/sections_controls/calculator.rb")]
+      when "/components"
+        page.views = [detail_view(page, "Components", build_components(page, status_text(page)),
+                                  source_path: "ruflet_studio/sections_controls/components.rb")]
       when "/drawing"
         page.views = [detail_view(page, "Drawing Tool", build_drawing(page, status_text(page)),
                                   source_path: "ruflet_studio/sections_drawing.rb")]

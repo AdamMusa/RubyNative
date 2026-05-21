@@ -41,6 +41,7 @@ module RufletStudio
         tile(page, Ruflet::MaterialIcons::ADD, "Counter", "/counter"),
         tile(page, Ruflet::MaterialIcons::CHECK, "To-do", "/todo"),
         tile(page, Ruflet::MaterialIcons::CALCULATE, "Calculator", "/calculator"),
+        tile(page, Ruflet::MaterialIcons::VIEW_MODULE, "Components", "/components"),
         tile(page, Ruflet::MaterialIcons::BRUSH, "Drawing Tool", "/drawing"),
         tile(page, Ruflet::MaterialIcons::PUBLIC, "WebView", "/webview"),
         tile(page, Ruflet::MaterialIcons::VIEW_MODULE, "Material controls", "/material"),
